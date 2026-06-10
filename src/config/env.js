@@ -32,8 +32,23 @@ export function getAppName() {
   return import.meta.env.VITE_APP_NAME || 'Stellar Camera Rentals ERP';
 }
 
-/** React Router basename (no trailing slash). Derived from Vite `base`. */
+/**
+ * React Router basename (no trailing slash).
+ * Custom domain serves the app at /; github.io project URLs use a subpath.
+ */
 export function getRouterBasename() {
+  if (typeof window !== 'undefined') {
+    const { hostname, pathname } = window.location;
+    const isCustomDomain =
+      hostname === 'stelleronline.com' || hostname === 'www.stelleronline.com';
+    if (isCustomDomain) return undefined;
+
+    const githubProjectPrefix = '/steller-erp-frontend-build';
+    if (hostname.endsWith('.github.io') && pathname.startsWith(githubProjectPrefix)) {
+      return githubProjectPrefix;
+    }
+  }
+
   const base = import.meta.env.BASE_URL || '/';
   const trimmed = base.replace(/\/$/, '');
   return trimmed || undefined;

@@ -9,7 +9,7 @@
     "build:pages": "npm run pwa:assets && vite build && node scripts/verify-dist-html.mjs && node scripts/copy-spa-fallback.mjs && node scripts/verify-dist-html.mjs && node scripts/verify-production-build.mjs",
     "publish:docs": "node scripts/publish-to-docs.mjs",
     "preview": "vite preview",
-    "preview:pages": "vite preview --base /steller-erp-frontend-build/",
+    "preview:pages": "vite preview",
     "lint": "eslint .",
     "pwa:assets": "node scripts/generate-pwa-assets.mjs",
     "verify:build": "node scripts/verify-production-build.mjs",

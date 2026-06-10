@@ -158,20 +158,44 @@ If the browser requests URLs like `.../%BASE_URL%favicon.svg`, an old unprocesse
 
 ---
 
-## CORS
+## CORS (required for login / API calls)
 
-The backend must allow the GitHub Pages origin, e.g.:
+The browser sends requests from **`https://auxxweb.github.io`** (no `/steller-erp-frontend-build` in the Origin header). The API must allow that origin.
 
-`https://<username>.github.io`
+On the **backend server** (`server.stelleronline.com`), edit `backend/.env`:
 
-Configure this in the API server CORS settings.
+```env
+CORS_ORIGIN=http://localhost:5173,https://auxxweb.github.io
+```
+
+Or set:
+
+```env
+CORS_ALLOW_GITHUB_PAGES=true
+```
+
+Then restart the API (e.g. `pm2 restart stellar`).
+
+Without this, the browser blocks `/api/v1/auth/login` with a CORS error even when the frontend build is correct.
 
 ---
 
-## Repository name
+## Custom domain (`stelleronline.com`)
 
-The default `VITE_BASE_PATH` is `/steller-erp-frontend-build/`. If the GitHub repository is renamed, update:
+GitHub Pages custom domains serve the site at **`/`** (root), not `/steller-erp-frontend-build/`.
 
-- `VITE_BASE_PATH` in `.env.production` / GitHub secrets
-- `DEFAULT_PAGES_BASE` in `vite.config.js` (fallback)
-- `preview:pages` script in `package.json`
+Production builds must use:
+
+```env
+VITE_BASE_PATH=/
+```
+
+`public/CNAME` contains `stelleronline.com` for GitHub Pages DNS.
+
+The old `auxxweb.github.io/steller-erp-frontend-build/` URL may not load assets after switching to root base — use **https://stelleronline.com** as the primary URL.
+
+Backend CORS must include:
+
+```env
+CORS_ORIGIN=...,https://stelleronline.com,https://www.stelleronline.com
+```

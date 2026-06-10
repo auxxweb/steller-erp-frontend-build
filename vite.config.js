@@ -8,7 +8,8 @@ import { createPwaManifest, createPwaWorkbox } from './pwa.manifest.js';
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
 
-const DEFAULT_PAGES_BASE = '/steller-erp-frontend-build/';
+/** Custom domain (stelleronline.com) is served at /. Use subpath only for github.io testing. */
+const DEFAULT_PAGES_BASE = '/';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, rootDir, '');
