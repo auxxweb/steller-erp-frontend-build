@@ -7,11 +7,13 @@
     "dev": "vite",
     "build": "npm run pwa:assets && vite build",
     "build:pages": "npm run pwa:assets && vite build && node scripts/verify-dist-html.mjs && node scripts/copy-spa-fallback.mjs && node scripts/verify-dist-html.mjs && node scripts/verify-production-build.mjs",
+    "publish:docs": "node scripts/publish-to-docs.mjs",
     "preview": "vite preview",
     "preview:pages": "vite preview --base /steller-erp-frontend-build/",
     "lint": "eslint .",
     "pwa:assets": "node scripts/generate-pwa-assets.mjs",
     "verify:build": "node scripts/verify-production-build.mjs",
+    "deploy:docs": "npm run build:pages && node scripts/publish-to-docs.mjs",
     "deploy:gh-pages": "npm run build:pages && gh-pages -d dist"
   },
   "dependencies": {

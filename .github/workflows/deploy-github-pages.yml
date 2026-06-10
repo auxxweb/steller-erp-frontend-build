@@ -1,5 +1,5 @@
-# Builds with Vite and publishes dist/ to the gh-pages branch.
-# GitHub Pages → Settings → Build and deployment → Deploy from branch → gh-pages → / (root)
+# Builds with Vite and commits docs/ to main.
+# GitHub Pages → Settings → Build and deployment → Deploy from branch → main → /docs
 
 name: Deploy to GitHub Pages
 
@@ -48,18 +48,26 @@ jobs:
       - name: Build for GitHub Pages
         run: npm run build:pages
 
-      - name: Sanity-check dist output
-        run: |
-          test -f dist/index.html
-          test -f dist/404.html
-          test -f dist/.nojekyll
-          ! grep -q '/src/main.jsx' dist/index.html
-          grep -q '/assets/' dist/index.html
-          echo "dist/index.html is a bundled production build."
+      - name: Publish dist to docs/
+        run: node scripts/publish-to-docs.mjs
 
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          force_orphan: true
+      - name: Sanity-check docs output
+        run: |
+          test -f docs/index.html
+          test -f docs/404.html
+          test -f docs/.nojekyll
+          ! grep -q '/src/main.jsx' docs/index.html
+          grep -q '/assets/' docs/index.html
+          echo "docs/index.html is a bundled production build."
+
+      - name: Commit and push docs/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No changes in docs/ — skip commit."
+            exit 0
+          fi
+          git commit -m "Deploy production build to docs/ [skip ci]"
+          git push

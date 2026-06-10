@@ -1,16 +1,36 @@
-# React + Vite
+# Stellar ERP Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## GitHub Pages (required one-time setup)
 
-Currently, two official plugins are available:
+Open **Settings → Pages → Build and deployment**:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Setting | Value |
+|---------|--------|
+| Source | **Deploy from a branch** |
+| Branch | **`main`** |
+| Folder | **`/docs`** |
 
-## React Compiler
+Then push to `main` or run:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run deploy:docs
+git add docs && git commit -m "Deploy site" && git push
+```
 
-## Expanding the ESLint configuration
+Live URL: `https://auxxweb.github.io/steller-erp-frontend-build/`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full details.
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+## Local preview (matches GitHub Pages)
+
+```bash
+npm run build:pages
+npm run preview:pages
+```
