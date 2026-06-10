@@ -1,4 +1,6 @@
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Stellar Camera Rentals ERP';
+import { getAppName } from '../config/env.js';
+
+export const APP_NAME = getAppName();
 
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',

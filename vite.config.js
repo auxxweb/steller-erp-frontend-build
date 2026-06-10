@@ -4,17 +4,28 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { pwaManifest, pwaWorkbox } from './pwa.manifest.js';
+import { createPwaManifest, createPwaWorkbox } from './pwa.manifest.js';
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
 
+const DEFAULT_PAGES_BASE = '/steller-erp-frontend-build/';
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, rootDir, '');
-  const runtimeCaching = [...pwaWorkbox.runtimeCaching];
+  const base =
+    env.VITE_BASE_PATH || (mode === 'production' ? DEFAULT_PAGES_BASE : '/');
+  const isSubdirectoryDeploy = base !== '/';
+  const enablePwa = env.VITE_ENABLE_PWA !== 'false' && !isSubdirectoryDeploy;
+  const runtimeCaching = [...createPwaWorkbox(base).runtimeCaching];
 
-  if (env.VITE_API_URL) {
+  const apiUrl =
+    env.VITE_API_BASE_URL?.trim() ||
+    env.VITE_API_URL?.trim() ||
+    (env.VITE_BACKEND_URL?.trim() ? `${env.VITE_BACKEND_URL.trim().replace(/\/$/, '')}/api/v1` : '');
+
+  if (apiUrl) {
     try {
-      const apiOrigin = new URL(env.VITE_API_URL).origin;
+      const apiOrigin = new URL(apiUrl).origin;
       const escaped = apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       runtimeCaching.push({
         urlPattern: new RegExp(`^${escaped}/`, 'i'),
@@ -30,15 +41,22 @@ export default defineConfig(({ mode }) => {
         },
       });
     } catch {
-      // Invalid VITE_API_URL — skip remote API caching rule
+      // Invalid API URL — skip remote API caching rule
     }
   }
 
+  const devProxyTarget =
+    env.VITE_DEV_PROXY_TARGET?.trim() ||
+    env.VITE_BACKEND_URL?.trim() ||
+    'http://localhost:5000';
+
   return {
+    base,
     plugins: [
       react(),
       tailwindcss(),
       VitePWA({
+        disable: !enablePwa,
         registerType: 'prompt',
         injectRegister: false,
         includeAssets: [
@@ -47,9 +65,9 @@ export default defineConfig(({ mode }) => {
           'splash/**/*.png',
           'offline.html',
         ],
-        manifest: pwaManifest,
+        manifest: createPwaManifest(base),
         workbox: {
-          ...pwaWorkbox,
+          ...createPwaWorkbox(base),
           runtimeCaching,
         },
         devOptions: {
@@ -59,11 +77,15 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
+    build: {
+      sourcemap: false,
+      target: 'es2020',
+    },
     server: {
       port: 5173,
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: devProxyTarget,
           changeOrigin: true,
         },
       },

@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { resolveApiBaseUrl } from '../config/env.js';
 
 /**
  * Standalone client for token refresh — avoids interceptor loops.
  */
 const refreshClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: resolveApiBaseUrl(),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });

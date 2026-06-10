@@ -1,11 +1,12 @@
 import axios from 'axios';
+import { resolveApiBaseUrl } from '../config/env.js';
 
 /**
  * Shared API client — interceptors registered in setupApiInterceptors.js
  * @see providers/AuthSessionProvider.jsx
  */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: resolveApiBaseUrl(),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

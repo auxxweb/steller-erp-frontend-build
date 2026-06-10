@@ -6,8 +6,11 @@ let updateSW = null;
  * Register the service worker and wire lifecycle callbacks.
  * @param {{ onNeedRefresh?: () => void, onOfflineReady?: () => void, onRegistered?: () => void }} callbacks
  */
+const pwaActive =
+  import.meta.env.PROD && import.meta.env.BASE_URL === '/' && import.meta.env.VITE_ENABLE_PWA !== 'false';
+
 export function registerAppSW(callbacks = {}) {
-  if (!import.meta.env.PROD) {
+  if (!pwaActive) {
     return () => {};
   }
 
