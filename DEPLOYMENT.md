@@ -131,21 +131,21 @@ GitHub Pages is serving **raw source**, not the Vite build. The app never loads 
 
 **Fix:**
 
-1. Repository → **Settings** → **Pages** → **Build and deployment**
-2. Source: **Deploy from a branch**
-3. Branch: **`gh-pages`** / folder **`/ (root)`**
-4. Push to `main` — the **Deploy to GitHub Pages** workflow builds `dist/` and pushes it to `gh-pages`
-5. (Optional) Set secret **`VITE_API_BASE_URL`** — defaults to `https://server.stelleronline.com/api/v1` if unset
-6. Hard-refresh — page source must show `/steller-erp-frontend-build/assets/index-*.js`
+1. Open [Settings → Pages](https://github.com/auxxweb/steller-erp-frontend-build/settings/pages)
+2. **Build and deployment → Source:** Deploy from a branch
+3. **Branch:** `main` — **Folder:** `/docs` (not `/ root`)
+4. Save and wait ~1 minute
 
-**Manual deploy from your machine:**
+The `docs/` folder contains the same output as `npm run preview:pages` locally. GitHub serves it at `https://auxxweb.github.io/steller-erp-frontend-build/` (no `/docs` in the public URL).
+
+**Manual deploy:**
 
 ```bash
-cd frontend
-npm run deploy:gh-pages
+npm run deploy:docs
+git add docs && git commit -m "Deploy site" && git push
 ```
 
-Then set Pages source to **`gh-pages`** branch as above.
+Or push to `main` — the GitHub Action rebuilds and updates `docs/` automatically.
 
 ### White screen / `%BASE_URL%` 404 errors
 
