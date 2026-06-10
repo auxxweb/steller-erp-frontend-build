@@ -117,18 +117,39 @@ Verify:
 
 ## Troubleshooting
 
-### White screen / `%BASE_URL%` 404 errors
+### White screen / `/src/main.jsx` 404
 
-If the browser requests URLs like `.../steller-erp-frontend-build/%BASE_URL%favicon.svg`, GitHub Pages is serving **source** `index.html`, not the **built** `dist/index.html`.
+If **View Page Source** shows:
+
+```html
+<script type="module" src="/src/main.jsx"></script>
+```
+
+GitHub Pages is serving **raw source**, not the Vite build. The app never loads → white screen.
+
+**Most common cause:** the default **Jekyll** workflow (`jekyll-gh-pages.yml`) was deploying the repo root as a static site. That workflow must be **removed** and replaced with `deploy-github-pages.yml` (runs `npm run build:pages`).
 
 **Fix:**
 
-1. Repository → **Settings** → **Pages** → **Build and deployment** → Source must be **GitHub Actions** (not “Deploy from a branch”).
-2. Confirm the **Deploy frontend to GitHub Pages** workflow completed successfully on the latest push.
-3. Open the workflow log and verify `npm run build:pages` ran and the sanity-check step passed.
-4. Re-deploy: **Actions** → workflow → **Run workflow**.
+1. Repository → **Settings** → **Pages** → **Build and deployment**
+2. Source: **Deploy from a branch**
+3. Branch: **`gh-pages`** / folder **`/ (root)`**
+4. Push to `main` — the **Deploy to GitHub Pages** workflow builds `dist/` and pushes it to `gh-pages`
+5. (Optional) Set secret **`VITE_API_BASE_URL`** — defaults to `https://server.stelleronline.com/api/v1` if unset
+6. Hard-refresh — page source must show `/steller-erp-frontend-build/assets/index-*.js`
 
-The production bundle must include hashed files under `dist/assets/` and must **not** reference `/src/main.jsx`.
+**Manual deploy from your machine:**
+
+```bash
+cd frontend
+npm run deploy:gh-pages
+```
+
+Then set Pages source to **`gh-pages`** branch as above.
+
+### White screen / `%BASE_URL%` 404 errors
+
+If the browser requests URLs like `.../%BASE_URL%favicon.svg`, an old unprocessed `index.html` was deployed. Re-run `npm run build:pages` via the correct workflow.
 
 ### White screen with correct asset paths
 

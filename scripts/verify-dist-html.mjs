@@ -13,6 +13,11 @@ if (!existsSync(join(distDir, 'index.html'))) {
   process.exit(1);
 }
 
+if (!existsSync(join(distDir, '.nojekyll'))) {
+  console.error('verify-dist-html: dist/.nojekyll missing — add public/.nojekyll for GitHub Pages.');
+  process.exit(1);
+}
+
 const errors = [];
 
 for (const name of ['index.html', '404.html']) {

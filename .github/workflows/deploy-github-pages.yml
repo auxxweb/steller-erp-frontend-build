@@ -1,0 +1,65 @@
+# Builds with Vite and publishes dist/ to the gh-pages branch.
+# GitHub Pages → Settings → Build and deployment → Deploy from branch → gh-pages → / (root)
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure build environment
+        run: |
+          API="${{ secrets.VITE_API_BASE_URL }}"
+          if [ -z "$API" ]; then
+            API="${{ vars.VITE_API_BASE_URL }}"
+          fi
+          if [ -z "$API" ]; then
+            API="https://server.stelleronline.com/api/v1"
+          fi
+          echo "VITE_API_BASE_URL=$API" >> "$GITHUB_ENV"
+          echo "VITE_BASE_PATH=/steller-erp-frontend-build/" >> "$GITHUB_ENV"
+          echo "Using API: $API"
+
+      - name: Build for GitHub Pages
+        run: npm run build:pages
+
+      - name: Sanity-check dist output
+        run: |
+          test -f dist/index.html
+          test -f dist/404.html
+          test -f dist/.nojekyll
+          ! grep -q '/src/main.jsx' dist/index.html
+          grep -q '/assets/' dist/index.html
+          echo "dist/index.html is a bundled production build."
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          force_orphan: true
