@@ -115,6 +115,28 @@ Verify:
 
 ---
 
+## Troubleshooting
+
+### White screen / `%BASE_URL%` 404 errors
+
+If the browser requests URLs like `.../steller-erp-frontend-build/%BASE_URL%favicon.svg`, GitHub Pages is serving **source** `index.html`, not the **built** `dist/index.html`.
+
+**Fix:**
+
+1. Repository → **Settings** → **Pages** → **Build and deployment** → Source must be **GitHub Actions** (not “Deploy from a branch”).
+2. Confirm the **Deploy frontend to GitHub Pages** workflow completed successfully on the latest push.
+3. Open the workflow log and verify `npm run build:pages` ran and the sanity-check step passed.
+4. Re-deploy: **Actions** → workflow → **Run workflow**.
+
+The production bundle must include hashed files under `dist/assets/` and must **not** reference `/src/main.jsx`.
+
+### White screen with correct asset paths
+
+- Check browser **Network** tab for failed `index-*.js` requests.
+- Confirm `VITE_API_BASE_URL` secret is set and CORS allows your GitHub Pages origin.
+
+---
+
 ## CORS
 
 The backend must allow the GitHub Pages origin, e.g.:
