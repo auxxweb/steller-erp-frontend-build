@@ -1,0 +1,684 @@
+/* ==========================================================================
+   Stellar ERP — Global design system
+   Premium cinematic black & white theme with dark mode
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------- */
+/* Design tokens — light (default)                                            */
+/* -------------------------------------------------------------------------- */
+:root {
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+
+  /* Core palette */
+  --stellar-ink: #0a0a0a;
+  --stellar-charcoal: #141414;
+  --stellar-graphite: #1f1f1f;
+  --stellar-slate: #52525b;
+  --stellar-mist: #a1a1aa;
+  --stellar-silver: #e4e4e7;
+  --stellar-pearl: #f4f4f5;
+  --stellar-snow: #fafafa;
+
+  /* Semantic colors */
+  --stellar-bg: #f5f5f5;
+  --stellar-bg-elevated: #ffffff;
+  --stellar-surface: #ffffff;
+  --stellar-surface-muted: #f4f4f5;
+  --stellar-border: rgba(10, 10, 10, 0.08);
+  --stellar-border-strong: rgba(10, 10, 10, 0.14);
+  --stellar-text: #0a0a0a;
+  --stellar-text-muted: #52525b;
+  --stellar-text-subtle: #71717a;
+  --stellar-accent: #0a0a0a;
+  --stellar-accent-hover: #1f1f1f;
+  --stellar-accent-fg: #fafafa;
+  --stellar-inverse: #fafafa;
+  --stellar-inverse-fg: #0a0a0a;
+  --stellar-danger: #dc2626;
+  --stellar-danger-fg: #ffffff;
+  --stellar-success: #16a34a;
+  --stellar-danger: #dc2626;
+  --stellar-focus-ring: rgba(10, 10, 10, 0.35);
+
+  /* Charts — monochrome series aligned with UI accent */
+  --chart-series-1: #0a0a0a;
+  --chart-series-2: #27272a;
+  --chart-series-3: #3f3f46;
+  --chart-series-4: #52525b;
+  --chart-series-5: #71717a;
+  --chart-series-6: #a1a1aa;
+  --chart-series-7: #d4d4d8;
+  --chart-series-8: #e4e4e7;
+  --chart-bar: #0a0a0a;
+  --chart-bar-muted: rgba(10, 10, 10, 0.28);
+
+  /* Spacing scale (4px base) */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Shadows — soft cinematic depth */
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.06), 0 8px 24px -8px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 4px 16px -4px rgba(0, 0, 0, 0.08), 0 24px 48px -12px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+
+  /* Layout */
+  --dashboard-max-width: 80rem;
+  --header-height: 3.5rem;
+  --sidebar-width: 16rem;
+
+  /* Legacy aliases (existing components) */
+  --color-stellar-black: var(--stellar-ink);
+  --color-stellar-charcoal: var(--stellar-charcoal);
+  --color-stellar-gray: var(--stellar-text-muted);
+  --color-stellar-silver: var(--stellar-silver);
+  --color-stellar-white: var(--stellar-snow);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Design tokens — dark                                                       */
+/* -------------------------------------------------------------------------- */
+.dark {
+  --stellar-bg: #050505;
+  --stellar-bg-elevated: #0a0a0a;
+  --stellar-surface: #0f0f0f;
+  --stellar-surface-muted: #141414;
+  --stellar-border: rgba(255, 255, 255, 0.08);
+  --stellar-border-strong: rgba(255, 255, 255, 0.14);
+  --stellar-text: #fafafa;
+  --stellar-text-muted: #a1a1aa;
+  --stellar-text-subtle: #71717a;
+  --stellar-accent: #fafafa;
+  --stellar-accent-hover: #e4e4e7;
+  --stellar-accent-fg: #0a0a0a;
+  --stellar-inverse: #0a0a0a;
+  --stellar-inverse-fg: #fafafa;
+  --stellar-focus-ring: rgba(250, 250, 250, 0.4);
+
+  --chart-series-1: #fafafa;
+  --chart-series-2: #e4e4e7;
+  --chart-series-3: #d4d4d8;
+  --chart-series-4: #a1a1aa;
+  --chart-series-5: #71717a;
+  --chart-series-6: #52525b;
+  --chart-series-7: #3f3f46;
+  --chart-series-8: #27272a;
+  --chart-bar: #fafafa;
+  --chart-bar-muted: rgba(250, 250, 250, 0.28);
+
+  --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --shadow-elevated: 0 4px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --color-stellar-black: var(--stellar-text);
+  --color-stellar-charcoal: var(--stellar-surface-muted);
+  --color-stellar-gray: var(--stellar-text-muted);
+  --color-stellar-silver: var(--stellar-border-strong);
+  --color-stellar-white: var(--stellar-bg);
+}
+
+/* Tailwind v4 theme bridge */
+@theme {
+  --color-stellar-black: var(--stellar-ink);
+  --color-stellar-charcoal: var(--stellar-charcoal);
+  --color-stellar-gray: var(--stellar-text-muted);
+  --color-stellar-silver: var(--stellar-silver);
+  --color-stellar-white: var(--stellar-snow);
+  --font-sans: var(--font-sans);
+}
+
+/* Custom utilities (required for @apply in Tailwind v4) */
+@utility transition-stellar {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+@utility transition-stellar-fast {
+  transition-duration: var(--duration-fast);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Base                                                                       */
+/* -------------------------------------------------------------------------- */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--stellar-border);
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply min-h-screen font-sans;
+    background-color: var(--stellar-bg);
+    color: var(--stellar-text);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+    transition:
+      background-color var(--duration-normal) var(--ease-out-expo),
+      color var(--duration-normal) var(--ease-out-expo);
+  }
+
+  ::selection {
+    background-color: var(--stellar-accent);
+    color: var(--stellar-accent-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--stellar-focus-ring);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight text-stellar-text;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Component utilities                                                        */
+/* -------------------------------------------------------------------------- */
+@layer components {
+  /* Dashboard shell */
+  .dashboard-shell {
+    @apply min-h-screen bg-stellar-bg;
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      color-mix(in srgb, var(--stellar-silver) 40%, transparent),
+      transparent
+    );
+  }
+
+  .dark .dashboard-shell {
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      color-mix(in srgb, var(--stellar-graphite) 80%, transparent),
+      transparent
+    );
+  }
+
+  .dashboard-header {
+    @apply sticky top-0 z-50 border-b border-stellar-border backdrop-blur-xl transition-stellar;
+    height: var(--header-height);
+    background-color: color-mix(in srgb, var(--stellar-bg-elevated) 85%, transparent);
+  }
+
+  .dashboard-main {
+    @apply mx-auto w-full max-w-dashboard flex-1 px-stellar-4 py-stellar-8 sm:px-stellar-6 lg:px-stellar-8;
+  }
+
+  .surface-panel {
+    @apply rounded-stellar-xl border border-stellar-border bg-stellar-surface shadow-stellar transition-stellar;
+  }
+
+  .surface-glass {
+    @apply rounded-stellar-xl border border-stellar-border backdrop-blur-xl transition-stellar;
+    background-color: color-mix(in srgb, var(--stellar-surface) 70%, transparent);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .text-gradient-stellar {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      var(--stellar-text) 0%,
+      var(--stellar-text-muted) 100%
+    );
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-stellar-2 font-medium transition-stellar;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    border-radius: var(--radius-full);
+  }
+
+  .btn-sm {
+    @apply px-stellar-3 py-stellar-1 text-xs;
+  }
+
+  .btn-md {
+    @apply px-stellar-5 py-stellar-2 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-stellar-6 py-stellar-3 text-base;
+  }
+
+  .btn-primary {
+    @apply bg-stellar-accent text-stellar-accent-fg shadow-stellar;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--stellar-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    @apply border border-stellar-border-strong bg-stellar-surface text-stellar-text;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-stellar-surface-muted;
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    @apply text-stellar-text-muted;
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    @apply bg-stellar-surface-muted text-stellar-text;
+  }
+
+  .btn-danger {
+    @apply bg-stellar-danger text-stellar-danger-fg;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  .btn-icon {
+    @apply p-stellar-2 aspect-square rounded-stellar-lg;
+  }
+
+  /* Cards */
+  .card {
+    @apply rounded-stellar-xl border border-stellar-border bg-stellar-surface p-stellar-6 shadow-stellar transition-stellar;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+    border-color: var(--stellar-border-strong);
+  }
+
+  .card-elevated {
+    @apply rounded-stellar-xl border border-stellar-border bg-stellar-surface p-stellar-6 shadow-stellar-elevated transition-stellar;
+  }
+
+  .card-glass {
+    @apply rounded-stellar-xl border border-stellar-border p-stellar-6 backdrop-blur-xl transition-stellar;
+    background-color: color-mix(in srgb, var(--stellar-surface) 70%, transparent);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .card-muted {
+    @apply rounded-stellar-xl border border-stellar-border bg-stellar-surface-muted p-stellar-5 transition-stellar;
+  }
+
+  .card-header {
+    @apply mb-stellar-4 flex flex-col gap-stellar-1;
+  }
+
+  .card-title {
+    @apply text-lg font-semibold tracking-tight text-stellar-text;
+  }
+
+  .card-description {
+    @apply text-sm text-stellar-text-muted;
+  }
+
+  /* Form */
+  .form-group {
+    @apply flex flex-col gap-stellar-2;
+  }
+
+  .form-label {
+    @apply text-sm font-medium text-stellar-text;
+  }
+
+  .form-hint {
+    @apply text-xs text-stellar-text-subtle;
+  }
+
+  .form-error {
+    @apply text-xs text-stellar-danger;
+  }
+
+  .input {
+    @apply w-full rounded-stellar-lg border border-stellar-border-strong bg-stellar-bg-elevated px-stellar-4 py-stellar-3 text-sm text-stellar-text transition-stellar;
+    @apply placeholder:text-stellar-text-subtle;
+  }
+
+  .input:hover:not(:disabled) {
+    border-color: var(--stellar-border-strong);
+  }
+
+  .input:focus {
+    @apply outline-none ring-2;
+    border-color: var(--stellar-accent);
+    --tw-ring-color: var(--stellar-focus-ring);
+  }
+
+  .input:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .input-error {
+    @apply border-stellar-danger;
+  }
+
+  .input-error:focus {
+    --tw-ring-color: color-mix(in srgb, var(--stellar-danger) 35%, transparent);
+  }
+
+  .textarea {
+    @apply w-full min-h-24 resize-y rounded-stellar-lg border border-stellar-border-strong bg-stellar-bg-elevated px-stellar-4 py-stellar-3 text-sm text-stellar-text transition-stellar;
+    @apply placeholder:text-stellar-text-subtle;
+  }
+
+  .alert {
+    @apply rounded-stellar-lg px-stellar-4 py-stellar-3 text-sm transition-stellar;
+  }
+
+  .alert-error {
+    @apply rounded-stellar-lg border border-stellar-danger/30 bg-stellar-danger/10 px-stellar-4 py-stellar-3 text-sm text-stellar-danger transition-stellar;
+  }
+
+  .alert-success {
+    @apply rounded-stellar-lg border border-stellar-success/30 px-stellar-4 py-stellar-3 text-sm text-stellar-success transition-stellar;
+    background-color: color-mix(in srgb, var(--stellar-success) 10%, transparent);
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply text-sm font-medium text-stellar-text-muted transition-stellar;
+  }
+
+  .nav-link:hover {
+    @apply text-stellar-text;
+  }
+
+  .nav-link-active {
+    @apply text-stellar-text;
+  }
+
+  /* Dividers & badges */
+  .divider {
+    @apply h-px w-full bg-stellar-border;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-stellar-2 py-stellar-1 text-xs font-medium transition-stellar;
+    @apply bg-stellar-surface-muted text-stellar-text-muted;
+  }
+
+  .badge-accent {
+    @apply bg-stellar-accent text-stellar-accent-fg;
+  }
+
+  /* Data tables */
+  .data-table-wrap {
+    @apply w-full;
+  }
+
+  .data-table {
+    @apply w-full min-w-[640px] border-collapse text-left text-sm;
+  }
+
+  .data-table thead {
+    @apply border-b border-stellar-border bg-stellar-surface-muted;
+  }
+
+  .data-table th {
+    @apply px-stellar-4 py-stellar-3 text-xs font-semibold uppercase tracking-wider text-stellar-text-subtle;
+  }
+
+  .data-table td {
+    @apply border-b border-stellar-border px-stellar-4 py-stellar-3 align-middle text-stellar-text;
+  }
+
+  .data-table tbody tr:hover {
+    @apply bg-stellar-surface-muted/50;
+  }
+
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .data-table--spacious th {
+    @apply px-stellar-4 py-stellar-4;
+  }
+
+  .data-table--spacious td {
+    @apply px-stellar-4 py-stellar-5;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Utility classes                                                            */
+/* -------------------------------------------------------------------------- */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn var(--duration-slow) var(--ease-out-expo) forwards;
+  }
+
+  .animate-fade-up {
+    animation: fadeUp var(--duration-slow) var(--ease-out-expo) forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn var(--duration-normal) var(--ease-spring) forwards;
+  }
+
+  .stagger-1 {
+    animation-delay: 50ms;
+  }
+
+  .stagger-2 {
+    animation-delay: 100ms;
+  }
+
+  .stagger-3 {
+    animation-delay: 150ms;
+  }
+
+  .opacity-0-start {
+    opacity: 0;
+  }
+
+  .scrollbar-stellar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--stellar-border-strong) transparent;
+  }
+
+  .scrollbar-stellar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-stellar::-webkit-scrollbar-thumb {
+    background: var(--stellar-border-strong);
+    border-radius: var(--radius-full);
+  }
+
+  /* Dashboard app shell — fixed viewport height so sidebar spans full screen */
+  .dashboard-app {
+    --dashboard-sidebar-width: 16rem;
+    --dashboard-sidebar-collapsed: 4.75rem;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+  }
+
+  .dashboard-sidebar {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+
+  /* STELLER logo — asset is white-on-black; invert on light surfaces */
+  .steller-logo {
+    line-height: 0;
+  }
+
+  .steller-logo__img {
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+  }
+
+  .steller-logo__img--theme {
+    filter: invert(1);
+  }
+
+  .dark .steller-logo__img--theme {
+    filter: none;
+  }
+
+  .steller-logo__img--on-dark {
+    filter: none;
+  }
+
+  .steller-logo--mark {
+    width: 2.75rem;
+    height: 2.75rem;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+  }
+
+  .steller-logo--mark .steller-logo__img {
+    width: 100%;
+    height: 185%;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .steller-logo--full {
+    width: auto;
+    max-width: 100%;
+    height: 3.5rem;
+  }
+
+  .steller-logo--compact {
+    height: 3rem;
+  }
+
+  .steller-logo--full .steller-logo__img,
+  .steller-logo--compact .steller-logo__img {
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    margin-inline: auto;
+  }
+
+  .dashboard-sidebar--expanded {
+    width: var(--dashboard-sidebar-width);
+  }
+
+  .dashboard-sidebar--collapsed {
+    width: var(--dashboard-sidebar-collapsed);
+  }
+
+  .sidebar-brand .steller-logo--full,
+  .sidebar-brand .steller-logo--compact {
+    width: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-sidebar,
+    .dashboard-app * {
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .dashboard-content {
+    @apply bg-stellar-bg;
+    background-image: radial-gradient(
+      ellipse 100% 80% at 50% -30%,
+      color-mix(in srgb, var(--stellar-silver) 25%, transparent),
+      transparent
+    );
+  }
+
+  .dark .dashboard-content {
+    background-image: radial-gradient(
+      ellipse 100% 80% at 50% -30%,
+      color-mix(in srgb, var(--stellar-graphite) 50%, transparent),
+      transparent
+    );
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

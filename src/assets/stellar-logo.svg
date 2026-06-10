@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" role="img" aria-label="Stellar">
+  <rect width="128" height="128" rx="28" fill="#0a0a0a"/>
+  <path
+    d="M64 22L88 58H72L64 46L56 58H40L64 22Z"
+    fill="#fafafa"
+  />
+  <path
+    d="M36 78H92V86C92 94 86 100 76 102L64 106L52 102C42 100 36 94 36 86V78Z"
+    fill="#fafafa"
+  />
+  <circle cx="64" cy="68" r="6" fill="#0a0a0a"/>
+</svg>
