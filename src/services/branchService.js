@@ -1,8 +1,15 @@
 import api from './api.js';
+import { filterOperationalBranches } from '../utils/branchHelpers.js';
 
 export const fetchBranchStats = () => api.get('/branches/stats');
 
-export const fetchBranches = (params) => api.get('/branches', { params });
+export const fetchBranches = async (params) => {
+  const res = await api.get('/branches', { params });
+  if (res.data?.data?.branches) {
+    res.data.data.branches = filterOperationalBranches(res.data.data.branches);
+  }
+  return res;
+};
 
 export const fetchBranch = (id) => api.get(`/branches/${id}`);
 

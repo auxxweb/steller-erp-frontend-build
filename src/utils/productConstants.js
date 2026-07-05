@@ -1,11 +1,3 @@
-/** Select value for shared inventory (maps to inventoryScope: common on API) */
-export const COMMON_INVENTORY_VALUE = '__common_inventory__';
-
-export const COMMON_INVENTORY_BRANCH_CODE = 'COMMON';
-
-/** UI label — network-wide catalog */
-export const COMMON_INVENTORY_LABEL = 'All branches';
-
 export const UNIT_LOCATION_LABEL = 'Currently at branch';
 
 export const PRODUCT_STATUS = {
@@ -29,7 +21,6 @@ export const PRODUCT_UNIT_STATUS = {
   RESERVED: 'reserved',
   RENTED: 'rented',
   MAINTENANCE: 'maintenance',
-  IN_TRANSFER: 'in_transfer',
   RETIRED: 'retired',
   LOST: 'lost',
 };
@@ -39,7 +30,6 @@ export const UNIT_STATUS_LABELS = {
   [PRODUCT_UNIT_STATUS.RESERVED]: 'Reserved',
   [PRODUCT_UNIT_STATUS.RENTED]: 'Rented',
   [PRODUCT_UNIT_STATUS.MAINTENANCE]: 'Maintenance',
-  [PRODUCT_UNIT_STATUS.IN_TRANSFER]: 'In transfer',
   [PRODUCT_UNIT_STATUS.RETIRED]: 'Retired',
   [PRODUCT_UNIT_STATUS.LOST]: 'Lost',
 };
@@ -74,17 +64,11 @@ export const EMPTY_PRODUCT_FORM = {
   model: '',
   sku: '',
   category: '',
-  branch: COMMON_INVENTORY_VALUE,
   description: '',
   status: PRODUCT_STATUS.ACTIVE,
   images: [],
   pricing: {
     individual: {
-      dailyRate: '',
-      weeklyRate: '',
-      monthlyRate: '',
-    },
-    combo: {
       dailyRate: '',
       weeklyRate: '',
       monthlyRate: '',

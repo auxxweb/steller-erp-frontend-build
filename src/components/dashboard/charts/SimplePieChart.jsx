@@ -1,4 +1,4 @@
-import { useChartColors } from './chartColors.js';
+import { resolveSliceColor, useChartColors } from './chartColors.js';
 
 function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -40,7 +40,7 @@ function SimplePieChart({ data = [], size = 160, emptyLabel = 'No data', inline 
     return {
       ...d,
       path: describeArc(cx, cy, r, start, end - 0.01),
-      color: colors[i % colors.length],
+      color: resolveSliceColor(d.id, i, colors),
     };
   });
 
@@ -52,16 +52,23 @@ function SimplePieChart({ data = [], size = 160, emptyLabel = 'No data', inline 
           : 'flex flex-col items-center gap-stellar-3'
       }
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0" aria-hidden>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0 drop-shadow-sm" aria-hidden>
         {slices.map((s) => (
-          <path key={s.id || s.label} d={s.path} fill={s.color} className="transition-[fill] duration-200" />
+          <path
+            key={s.id || s.label}
+            d={s.path}
+            fill={s.color}
+            stroke="var(--stellar-surface)"
+            strokeWidth="1.5"
+            className="transition-[fill] duration-200"
+          />
         ))}
         <circle cx={cx} cy={cy} r={r * 0.45} className="fill-stellar-surface" />
       </svg>
       <ul className="flex w-full min-w-0 flex-1 flex-col gap-stellar-1 text-xs sm:max-w-[200px]">
         {slices.map((s) => (
           <li key={s.id || s.label} className="flex items-center gap-stellar-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: s.color }} />
+            <span className="h-2.5 w-2.5 shrink-0 rounded-sm shadow-sm" style={{ background: s.color }} />
             <span className="flex-1 capitalize text-stellar-text-muted">{s.label}</span>
             <span className="font-medium tabular-nums text-stellar-text">{s.value}</span>
           </li>

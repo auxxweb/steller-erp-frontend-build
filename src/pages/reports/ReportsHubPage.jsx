@@ -22,7 +22,7 @@ function ReportsHubPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Reports</h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-          Rental job activity and sales performance for your branch or organisation.
+          Rental job activity and billing totals for your branch or organisation.
         </p>
       </div>
 
@@ -32,12 +32,7 @@ function ReportsHubPage() {
         <ReportLink
           to={`${basePath}/rental-jobs`}
           title="Rental job report"
-          description="All bookings in a date range — status, customer, amounts collected and outstanding."
-        />
-        <ReportLink
-          to={`${basePath}/sales`}
-          title="Sales report"
-          description="Invoices issued in a period — totals, tax, payments received and balance due."
+          description="Bookings in a date range — job value, collected, outstanding and deposits. Invoice totals are used when a bill exists."
         />
       </div>
     </div>

@@ -4,6 +4,7 @@ import { getApiErrorMessage } from '../../utils/userValidation.js';
 import { useState } from 'react';
 import FileDropzone from '../upload/FileDropzone.jsx';
 import Button from '../ui/Button.jsx';
+import SearchableSelect from '../ui/SearchableSelect.jsx';
 import { ID_PROOF_TYPE_OPTIONS } from '../../utils/customerConstants.js';
 import { ACCEPT_DOCUMENTS, UPLOAD_LIMITS } from '../../utils/uploadConstants.js';
 import { validateFiles, documentMaxBytes } from '../../utils/uploadHelpers.js';
@@ -61,23 +62,13 @@ function IdProofUploadSection({ customerId, onUploaded }) {
   return (
     <form onSubmit={handleUpload} className="space-y-stellar-4 rounded-stellar-lg border border-dashed border-stellar-border p-stellar-4">
       <div className="grid gap-stellar-3 sm:grid-cols-2">
-        <div className="form-group">
-          <label htmlFor="proof-type" className="form-label">
-            ID type
-          </label>
-          <select
-            id="proof-type"
-            className="input"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            {ID_PROOF_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SearchableSelect
+          id="proof-type"
+          label="ID type"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          options={ID_PROOF_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+        />
         <div className="form-group">
           <label htmlFor="proof-number" className="form-label">
             ID number

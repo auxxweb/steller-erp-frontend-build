@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QrScanModal from '../qr/QrScanModal.jsx';
 import Button from '../ui/Button.jsx';
+import RentalUnitSelector from './RentalUnitSelector.jsx';
 import { verifyQr } from '../../services/qrService.js';
 import { fetchProductUnits } from '../../services/productService.js';
-import { UNIT_STATUS_LABELS } from '../../utils/productConstants.js';
 import {
   buildPickupChecklistSlots,
   getRentalItemId,
@@ -239,11 +239,19 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
 
   const assignedCount = Object.keys(assignments).filter((k) => assignments[k]).length;
 
+  const disabledUnitIds = useMemo(() => {
+    const ids = new Set();
+    Object.values(assignments).forEach((id) => {
+      if (id) ids.add(id.toString());
+    });
+    return ids;
+  }, [assignments]);
+
   return (
     <div className="space-y-stellar-4">
       {(pendingSlots.length > 0 || preassignedSlots.length > 0) && (
         <Button type="button" variant="secondary" size="sm" onClick={() => openScan(null)}>
-          Scan QR
+          Scan next unit
         </Button>
       )}
 
@@ -262,11 +270,11 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
       )}
 
       {pendingSlots.length > 0 && (
-        <div className="space-y-stellar-2">
+        <div className="space-y-stellar-4">
           <p className="text-xs font-medium uppercase tracking-wide text-stellar-text-muted">
             Assign serials at pickup
           </p>
-          <ul className="divide-y divide-stellar-border rounded-stellar-lg border border-stellar-border">
+          <ul className="space-y-stellar-4">
             {pendingSlots.map((slot) => {
               const { item } = slot;
               const productId = item.product?.id || item.product?._id || item.product;
@@ -279,36 +287,43 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
               const lineQty = slotsPerItemQty.get(slot.rentalItemId) || 1;
               const qtyLabel =
                 lineQty > 1 ? ` (${slot.slotIndex + 1} of ${lineQty})` : '';
+              const slotDisabledIds = new Set(disabledUnitIds);
+              if (selected) slotDisabledIds.delete(selected.toString());
 
               return (
-                <li key={slot.slotKey} className="space-y-stellar-2 p-stellar-3">
-                  <div>
-                    <p className="text-sm font-medium text-stellar-text">
-                      {item.product?.name || 'Product'}
-                      {qtyLabel}
-                    </p>
-                    <p className="text-xs text-stellar-text-muted">Serial not assigned yet</p>
+                <li
+                  key={slot.slotKey}
+                  className="rounded-stellar-xl border border-stellar-border bg-stellar-surface p-stellar-4"
+                >
+                  <div className="mb-stellar-3 flex items-start justify-between gap-stellar-2">
+                    <div>
+                      <p className="text-sm font-semibold text-stellar-text">
+                        {item.product?.name || 'Product'}
+                        {qtyLabel}
+                      </p>
+                      {item.combo?.name ? (
+                        <p className="text-[10px] uppercase tracking-wide text-stellar-text-muted">
+                          Combo · {item.combo.name}
+                        </p>
+                      ) : null}
+                      <p className="text-xs text-stellar-text-muted">
+                        {selected ? 'Serial selected' : 'Select serial or scan QR'}
+                      </p>
+                    </div>
+                    {selected && (
+                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        Ready
+                      </span>
+                    )}
                   </div>
-                  <select
-                    className="input font-mono text-sm"
-                    value={selected}
-                    onChange={(e) => setSlotAssignment(slot.slotKey, e.target.value)}
-                  >
-                    <option value="">Select serial</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id} disabled={u.status !== 'available'}>
-                        {u.serialNumber} — {UNIT_STATUS_LABELS[u.status] || u.status}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openScan(slot.slotKey)}
-                  >
-                    Scan QR for this item
-                  </Button>
+                  <RentalUnitSelector
+                    units={units}
+                    selectedId={selected}
+                    disabledUnitIds={slotDisabledIds}
+                    onSelect={(unitId) => setSlotAssignment(slot.slotKey, unitId || null)}
+                    onScan={() => openScan(slot.slotKey)}
+                    label=""
+                  />
                 </li>
               );
             })}
@@ -323,25 +338,42 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
             return (
               <li
                 key={slot.slotKey}
-                className="flex items-center justify-between gap-stellar-3 p-stellar-3"
+                className="flex flex-col gap-stellar-3 p-stellar-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-stellar-text">
                     {slot.item.product?.name || 'Product'}
                   </p>
-                  <p className="text-xs text-stellar-text-muted">
+                  {slot.item.combo?.name ? (
+                    <p className="text-[10px] uppercase tracking-wide text-stellar-text-muted">
+                      Combo · {slot.item.combo.name}
+                    </p>
+                  ) : null}
+                  <p className="font-mono text-xs text-stellar-text-muted">
                     {slot.serialLabel || slot.unitId}
                   </p>
                 </div>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    done
-                      ? 'bg-emerald-500/15 text-emerald-700'
-                      : 'bg-amber-500/15 text-amber-700'
-                  }`}
-                >
-                  {done ? 'Scanned' : 'Pending scan'}
-                </span>
+                <div className="flex shrink-0 items-center gap-stellar-2">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      done
+                        ? 'bg-emerald-500/15 text-emerald-700'
+                        : 'bg-amber-500/15 text-amber-700'
+                    }`}
+                  >
+                    {done ? 'Scanned' : 'Awaiting scan'}
+                  </span>
+                  {!done && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => openScan(slot.slotKey)}
+                    >
+                      Scan
+                    </Button>
+                  )}
+                </div>
               </li>
             );
           })}

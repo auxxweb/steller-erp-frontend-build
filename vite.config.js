@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
         handler: 'NetworkFirst',
         options: {
           cacheName: 'stellar-remote-api-cache',
-          networkTimeoutSeconds: 10,
+          networkTimeoutSeconds: 30,
           expiration: {
             maxEntries: 80,
             maxAgeSeconds: 60 * 5,
@@ -61,7 +61,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'prompt',
         injectRegister: false,
         includeAssets: [
-          'favicon.svg',
+          'favicon.png',
           'icons/**/*.png',
           'splash/**/*.png',
           'offline.html',
@@ -88,6 +88,8 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: devProxyTarget,
           changeOrigin: true,
+          timeout: 120_000,
+          proxyTimeout: 120_000,
         },
       },
     },

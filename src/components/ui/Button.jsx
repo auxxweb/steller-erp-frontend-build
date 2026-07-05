@@ -1,4 +1,5 @@
 import { cn } from '../../utils/cn.js';
+import Spinner from './Spinner.jsx';
 
 const variants = {
   primary: 'btn-primary',
@@ -37,7 +38,14 @@ function Button({
       )}
       {...props}
     >
-      {children}
+      {isLoading ? (
+        <span className="inline-flex items-center justify-center gap-2">
+          <Spinner size="sm" />
+          <span>{children}</span>
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 }

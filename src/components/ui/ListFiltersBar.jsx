@@ -19,28 +19,40 @@ function ListFiltersBar({
   onSubmit,
   submitLabel = 'Apply',
   showSubmit = true,
+  showSearch = true,
   showDateFilters = true,
   className = '',
   children,
+  extraFilters,
 }) {
   const content = (
     <div className={`space-y-stellar-4 ${className}`}>
       <div
-        className={`grid gap-stellar-4 sm:grid-cols-2 ${showDateFilters ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+        className={`grid gap-stellar-4 ${
+          showDateFilters
+            ? showSearch
+              ? 'sm:grid-cols-2 lg:grid-cols-4'
+              : 'sm:grid-cols-2 lg:grid-cols-3'
+            : showSearch
+              ? 'sm:grid-cols-2 lg:grid-cols-3'
+              : 'sm:grid-cols-2'
+        }`}
       >
-        <div className="form-group sm:col-span-2">
-          <label htmlFor={`${idPrefix}-search`} className="form-label">
-            Search
-          </label>
-          <input
-            id={`${idPrefix}-search`}
-            type="search"
-            className="input w-full"
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={(e) => onSearchChange?.(e.target.value)}
-          />
-        </div>
+        {showSearch && (
+          <div className="form-group sm:col-span-2">
+            <label htmlFor={`${idPrefix}-search`} className="form-label">
+              Search
+            </label>
+            <input
+              id={`${idPrefix}-search`}
+              type="search"
+              className="input w-full"
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+            />
+          </div>
+        )}
         {showDateFilters && (
           <div className="form-group">
             <label htmlFor={`${idPrefix}-period`} className="form-label">
@@ -61,6 +73,7 @@ function ListFiltersBar({
           </div>
         )}
         {children}
+        {extraFilters}
       </div>
       {showDateFilters && period === 'custom' && (
         <div className="grid gap-stellar-3 sm:grid-cols-2">

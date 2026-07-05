@@ -8,20 +8,18 @@ import Button from '../../components/ui/Button.jsx';
 import ComboStatusBadge from '../../components/combos/ComboStatusBadge.jsx';
 import ComboPricingPanel from '../../components/combos/ComboPricingPanel.jsx';
 import ComboAvailabilityPanel from '../../components/combos/ComboAvailabilityPanel.jsx';
-import {
-  COMBO_PRICING_RULE_OPTIONS,
-  COMMON_INVENTORY_LABEL,
-} from '../../utils/comboConstants.js';
 import useComboBasePath, { useCanManageCombos } from '../../hooks/useComboBasePath.js';
 import { defaultBookingWindow, fromDatetimeLocalValue } from '../../utils/rentalConstants.js';
+import { inferComboRateType } from '../../utils/comboFormHelpers.js';
 import {
   fetchCombo,
   fetchComboPrice,
   fetchComboAvailability,
 } from '../../services/comboService.js';
 
-function ruleLabel(rule) {
-  return COMBO_PRICING_RULE_OPTIONS.find((o) => o.value === rule)?.label || rule;
+function formatMoney(val) {
+  if (val == null || val === '') return '—';
+  return `₹${Number(val).toLocaleString('en-IN')}`;
 }
 
 function ComboDetailPage() {
@@ -67,7 +65,7 @@ function ComboDetailPage() {
       const params = {
         scheduledStartAt: fromDatetimeLocalValue(previewStartAt),
         scheduledEndAt: fromDatetimeLocalValue(previewEndAt),
-        rateType: 'daily',
+        rateType: inferComboRateType(combo?.pricing || {}),
       };
       const [priceRes, availRes] = await Promise.all([
         fetchComboPrice(id, params),
@@ -80,12 +78,12 @@ function ComboDetailPage() {
     } finally {
       setPreviewLoading(false);
     }
-  }, [id, previewStartAt, previewEndAt]);
+  }, [id, previewStartAt, previewEndAt, combo?.pricing]);
 
   useEffect(() => {
     if (!combo) return;
     runPreview();
-  }, [combo?.id]);
+  }, [combo, runPreview]);
 
   if (loading) {
     return <p className="text-sm text-stellar-text-muted">Loading combo…</p>;
@@ -114,11 +112,6 @@ function ComboDetailPage() {
           </div>
           <p className="mt-stellar-1 text-sm text-stellar-text-muted">
             {combo.code}
-            {combo.isShared
-              ? ` · ${COMMON_INVENTORY_LABEL}`
-              : combo.branch?.name
-                ? ` · ${combo.branch.name}`
-                : ''}
           </p>
         </div>
         {canManage && (
@@ -139,23 +132,51 @@ function ComboDetailPage() {
             {combo.description && (
               <p className="mb-stellar-4 text-sm text-stellar-text-muted">{combo.description}</p>
             )}
-            <p className="text-sm">
-              <span className="text-stellar-text-muted">Pricing rule:</span>{' '}
-              {ruleLabel(combo.pricingRule)}
-            </p>
+            <dl className="mb-stellar-4 grid grid-cols-3 gap-stellar-3 text-sm">
+              <div>
+                <dt className="text-stellar-text-muted">Daily total</dt>
+                <dd className="font-medium tabular-nums">{formatMoney(combo.pricing?.dailyRate)}</dd>
+              </div>
+              <div>
+                <dt className="text-stellar-text-muted">Weekly total</dt>
+                <dd className="font-medium tabular-nums">{formatMoney(combo.pricing?.weeklyRate)}</dd>
+              </div>
+              <div>
+                <dt className="text-stellar-text-muted">Monthly total</dt>
+                <dd className="font-medium tabular-nums">{formatMoney(combo.pricing?.monthlyRate)}</dd>
+              </div>
+            </dl>
             <ul className="mt-stellar-4 divide-y divide-stellar-border rounded-stellar-lg border border-stellar-border">
               {combo.items?.map((item) => (
                 <li
                   key={item.product?.id || item.product}
-                  className="flex justify-between gap-stellar-2 p-stellar-3 text-sm"
+                  className="p-stellar-3 text-sm"
                 >
-                  <span>
-                    {item.product?.name || 'Product'}
-                    {item.product?.sku && (
-                      <span className="text-stellar-text-muted"> ({item.product.sku})</span>
-                    )}
-                  </span>
-                  <span className="tabular-nums text-stellar-text-muted">× {item.quantity}</span>
+                  <div className="flex justify-between gap-stellar-2">
+                    <span>
+                      {item.product?.name || 'Product'}
+                      {item.product?.sku && (
+                        <span className="text-stellar-text-muted"> ({item.product.sku})</span>
+                      )}
+                    </span>
+                    <span className="tabular-nums text-stellar-text-muted">× {item.quantity}</span>
+                  </div>
+                  {item.pricing && (
+                    <dl className="mt-stellar-2 grid grid-cols-3 gap-stellar-2 text-xs">
+                      <div>
+                        <dt className="text-stellar-text-muted">Daily</dt>
+                        <dd className="tabular-nums">{formatMoney(item.pricing.dailyRate)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-stellar-text-muted">Weekly</dt>
+                        <dd className="tabular-nums">{formatMoney(item.pricing.weeklyRate)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-stellar-text-muted">Monthly</dt>
+                        <dd className="tabular-nums">{formatMoney(item.pricing.monthlyRate)}</dd>
+                      </div>
+                    </dl>
+                  )}
                 </li>
               ))}
             </ul>

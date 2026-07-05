@@ -4,7 +4,6 @@ import { formatDate } from '../../utils/format.js';
 const TYPE_META = {
   rental: { label: 'Rental', className: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' },
   invoice: { label: 'Invoice', className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
-  transfer: { label: 'Transfer', className: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
 };
 
 function ActivityFeed({ items = [], resolveLink }) {

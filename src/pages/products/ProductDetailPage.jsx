@@ -31,10 +31,6 @@ function ProductDetailPage() {
                   <dd>{product.category?.name || '—'}</dd>
                 </div>
                 <div className="flex justify-between gap-stellar-4">
-                  <dt className="text-stellar-text-muted">Branch</dt>
-                  <dd>{product.branch?.name || '—'}</dd>
-                </div>
-                <div className="flex justify-between gap-stellar-4">
                   <dt className="text-stellar-text-muted">Serial units</dt>
                   <dd className="tabular-nums">
                     {product.availableUnits ?? 0} available / {product.totalUnits ?? 0} total

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import CategoryStatusBadge from './CategoryStatusBadge.jsx';
 import Button from '../ui/Button.jsx';
+import { formatBranchDisplay } from '../../utils/branchHelpers.js';
 
 function CategoryTable({ categories, loading, basePath, showLocation, onDelete }) {
   if (loading) {
@@ -27,8 +28,9 @@ function CategoryTable({ categories, loading, basePath, showLocation, onDelete }
   }
 
   return (
-    <div className="data-table-wrap overflow-x-auto">
-      <table className="data-table">
+    <>
+      <div className="data-table-wrap data-table-scroll hidden md:block">
+        <table className="data-table">
         <thead>
           <tr>
             <th>Category</th>
@@ -71,7 +73,7 @@ function CategoryTable({ categories, loading, basePath, showLocation, onDelete }
               </td>
               {showLocation && (
                 <td className="text-sm text-stellar-text-muted">
-                  {category.branch?.name || '—'}
+                  {formatBranchDisplay(category.branch)}
                 </td>
               )}
               <td>
@@ -101,7 +103,65 @@ function CategoryTable({ categories, loading, basePath, showLocation, onDelete }
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+
+      <ul className="divide-y divide-stellar-border md:hidden">
+        {categories.map((category) => (
+          <li key={category.id} className="p-stellar-4">
+            <div className="flex gap-stellar-3">
+              {category.image ? (
+                <img
+                  src={category.image}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-stellar-md border border-stellar-border object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-stellar-md bg-stellar-surface-muted text-xs font-medium text-stellar-text-subtle">
+                  {category.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-stellar-2">
+                  <p className="font-medium text-stellar-text">{category.name}</p>
+                  <CategoryStatusBadge status={category.status} />
+                </div>
+                <p className="mt-stellar-1 font-mono text-xs text-stellar-text-muted">
+                  {category.slug}
+                </p>
+                {showLocation && (
+                  <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                    {formatBranchDisplay(category.branch)}
+                  </p>
+                )}
+                {category.description && (
+                  <p className="mt-stellar-1 line-clamp-2 text-xs text-stellar-text-muted">
+                    {category.description}
+                  </p>
+                )}
+                <div className="mt-stellar-3 flex flex-wrap gap-stellar-2">
+                  <Link
+                    to={`${basePath}/${category.id}/edit`}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    Edit
+                  </Link>
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="!text-stellar-danger"
+                      onClick={() => onDelete(category)}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

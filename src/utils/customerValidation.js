@@ -1,15 +1,12 @@
 import { CUSTOMER_TYPE } from './customerConstants.js';
 
-export const validateCustomerForm = (values, { isSuperAdmin = false, isEdit = false } = {}) => {
+export const validateCustomerForm = (values, { isEdit = false } = {}) => {
   const errors = {};
 
   if (!values.name?.trim()) errors.name = 'Name is required';
   if (!values.phone?.trim()) errors.phone = 'Phone is required';
   if (values.email && !/^\S+@\S+\.\S+$/.test(values.email)) {
     errors.email = 'Enter a valid email';
-  }
-  if (!isEdit && isSuperAdmin && !values.branch) {
-    errors.branch = 'Branch is required';
   }
   if (values.customerType === CUSTOMER_TYPE.BUSINESS && !values.company?.trim()) {
     errors.company = 'Company name is required for business customers';

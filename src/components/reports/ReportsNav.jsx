@@ -6,15 +6,11 @@ function ReportsNav() {
   const basePath = useReportBasePath();
   const { pathname } = useLocation();
 
-  const tabs = [
-    { to: basePath, label: 'Overview', end: true },
-    { to: `${basePath}/rental-jobs`, label: 'Rental jobs' },
-    { to: `${basePath}/sales`, label: 'Sales' },
-  ];
+  const tabs = [{ to: `${basePath}/rental-jobs`, label: 'Rental jobs' }];
 
   return (
     <nav
-      className="-mx-stellar-4 flex gap-stellar-1 overflow-x-auto border-b border-stellar-border px-stellar-4 pb-px sm:mx-0 sm:px-0"
+      className="nav-scroll -mx-stellar-4 flex gap-stellar-1 overflow-x-auto border-b border-stellar-border px-stellar-4 pb-px sm:mx-0 sm:px-0"
       aria-label="Reports"
     >
       {tabs.map((tab) => {

@@ -29,7 +29,7 @@ export function resolveApiBaseUrl() {
 }
 
 export function getAppName() {
-  return import.meta.env.VITE_APP_NAME || 'Stellar Camera Rentals ERP';
+  return import.meta.env.VITE_APP_NAME || 'Steller Rental Software';
 }
 
 /**

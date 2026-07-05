@@ -16,7 +16,7 @@ export function useInvoiceRedirect() {
   );
 
   const goToInvoiceAfterReturn = (returnResponse, { partial } = {}) => {
-    const invoiceId = returnResponse?.data?.data?.invoice?.id;
+    const invoiceId = returnResponse?.data?.invoice?.id;
     if (!invoiceId || partial) return false;
     if (canOpenInvoice) {
       navigate(`${invoiceBasePath}/${invoiceId}`);

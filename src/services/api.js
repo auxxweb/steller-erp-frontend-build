@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { resolveApiBaseUrl } from '../config/env.js';
+import { API_TIMEOUT_MS } from '../config/apiTimeouts.js';
 
 /**
  * Shared API client — interceptors registered in setupApiInterceptors.js
@@ -7,10 +8,7 @@ import { resolveApiBaseUrl } from '../config/env.js';
  */
 const api = axios.create({
   baseURL: resolveApiBaseUrl(),
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: API_TIMEOUT_MS,
 });
 
 export default api;

@@ -1,4 +1,10 @@
 import useAuthStore from '../store/authStore.js';
+import {
+  decrementLoader,
+  incrementLoader,
+  resetGlobalLoader,
+  shouldTrackLoader,
+} from '../lib/loadingStore.js';
 import api from './api.js';
 
 const SKIP_REFRESH_PATHS = [
@@ -27,6 +33,7 @@ const processQueue = (error, token = null) => {
 export const AUTH_LOGOUT_EVENT = 'stellar:auth-logout';
 
 export const dispatchAuthLogout = (reason = 'session_expired') => {
+  resetGlobalLoader();
   window.dispatchEvent(
     new CustomEvent(AUTH_LOGOUT_EVENT, { detail: { reason } }),
   );
@@ -46,11 +53,35 @@ export const setupApiInterceptors = () => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // FormData must not use application/json — browser sets multipart boundary.
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    } else if (
+      config.headers &&
+      !config.headers['Content-Type'] &&
+      !config.headers['content-type']
+    ) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+
+    if (shouldTrackLoader(config)) {
+      incrementLoader();
+      config._loaderTracked = true;
+    }
     return config;
   });
 
   api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (response.config?._loaderTracked) {
+        decrementLoader();
+      }
+      return response;
+    },
     async (error) => {
       const originalRequest = error.config;
       const status = error.response?.status;
@@ -70,6 +101,7 @@ export const setupApiInterceptors = () => {
         if (!refreshToken) {
           useAuthStore.getState().clearSession();
           dispatchAuthLogout('no_refresh_token');
+          if (originalRequest?._loaderTracked) decrementLoader();
           return Promise.reject(new Error(message));
         }
 
@@ -81,7 +113,10 @@ export const setupApiInterceptors = () => {
               originalRequest.headers.Authorization = `Bearer ${token}`;
               return api(originalRequest);
             })
-            .catch((err) => Promise.reject(err));
+            .catch((err) => {
+              if (originalRequest?._loaderTracked) decrementLoader();
+              return Promise.reject(err);
+            });
         }
 
         originalRequest._retry = true;
@@ -109,6 +144,10 @@ export const setupApiInterceptors = () => {
       if (status === 401 && !shouldSkipRefresh(originalRequest?.url)) {
         useAuthStore.getState().clearSession();
         dispatchAuthLogout('unauthorized');
+      }
+
+      if (originalRequest?._loaderTracked) {
+        decrementLoader();
       }
 
       return Promise.reject(new Error(message));

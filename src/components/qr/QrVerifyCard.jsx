@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import Card from '../ui/Card.jsx';
 import UnitStatusBadge from '../products/UnitStatusBadge.jsx';
 import ImageGallery from '../products/ImageGallery.jsx';
+import { formatBranchDisplay } from '../../utils/branchHelpers.js';
 
 function QrVerifyCard({ result, productBasePath }) {
   if (!result?.unit) return null;
@@ -37,7 +38,7 @@ function QrVerifyCard({ result, productBasePath }) {
         </div>
         <div>
           <dt className="text-stellar-text-muted">Branch</dt>
-          <dd>{unit.branch?.name || unit.branch?.code || '—'}</dd>
+          <dd>{formatBranchDisplay(unit.branch)}</dd>
         </div>
         <div>
           <dt className="text-stellar-text-muted">Condition</dt>

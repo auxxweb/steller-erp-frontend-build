@@ -1,7 +1,7 @@
 export const PWA_CONFIG = {
-  name: 'Stellar Camera Rentals ERP',
-  shortName: 'Stellar ERP',
-  description: 'Manage camera rentals, inventory, branches, and deliveries.',
+  name: 'Steller Rental Software',
+  shortName: 'Steller',
+  description: 'Steller Rental Software — manage camera rentals, bookings, billing, and inventory.',
   themeColor: '#0a0a0a',
   backgroundColor: '#0a0a0a',
   scope: '/',

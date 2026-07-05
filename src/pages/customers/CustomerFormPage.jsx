@@ -6,13 +6,7 @@ import {
   validateCustomerForm,
   hasValidationErrors,
 } from '../../utils/customerValidation.js';
-import useCustomerBasePath, {
-  useCanManageCustomers,
-  useIsBranchWorkspace,
-} from '../../hooks/useCustomerBasePath.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
+import useCustomerBasePath, { useCanManageCustomers } from '../../hooks/useCustomerBasePath.js';
 import { createCustomer, updateCustomer, fetchCustomer } from '../../services/customerService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
@@ -24,7 +18,6 @@ function customerToForm(customer) {
     phone: customer.phone || '',
     alternatePhone: customer.alternatePhone || '',
     email: customer.email || '',
-    branch: customer.branch?.id || customer.branch || '',
     company: customer.company || '',
     gstin: customer.gstin || '',
     creditLimit: customer.creditLimit ?? '',
@@ -42,7 +35,7 @@ function customerToForm(customer) {
   };
 }
 
-function formToPayload(values, isSuperAdmin) {
+function formToPayload(values) {
   const payload = {
     customerType: values.customerType,
     name: values.name.trim(),
@@ -59,8 +52,6 @@ function formToPayload(values, isSuperAdmin) {
     payload.creditLimit = Number(values.creditLimit);
   }
 
-  if (isSuperAdmin && values.branch) payload.branch = values.branch;
-
   if (values.idProofType && values.idProofNumber?.trim()) {
     payload.idProof = {
       type: values.idProofType,
@@ -76,27 +67,16 @@ function CustomerFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const basePath = useCustomerBasePath();
-  const isBranchWorkspace = useIsBranchWorkspace();
   const canManage = useCanManageCustomers();
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN && !isBranchWorkspace;
 
   const [values, setValues] = useState(EMPTY_CUSTOMER_FORM);
   const [errors, setErrors] = useState({});
-  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!canManage) navigate(basePath, { replace: true });
   }, [canManage, basePath, navigate]);
-
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches))
-      .catch(() => setBranches([]));
-  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -119,13 +99,13 @@ function CustomerFormPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validateCustomerForm(values, { isSuperAdmin, isEdit });
+    const validationErrors = validateCustomerForm(values, { isEdit });
     setErrors(validationErrors);
     if (hasValidationErrors(validationErrors)) return;
 
     setSubmitting(true);
     try {
-      const payload = formToPayload(values, isSuperAdmin);
+      const payload = formToPayload(values);
       if (isEdit) {
         await updateCustomer(id, payload);
         navigate(`${basePath}/${id}`, { state: { message: 'Customer updated' } });
@@ -162,8 +142,6 @@ function CustomerFormPage() {
       <CustomerForm
         values={values}
         errors={errors}
-        branches={branches}
-        showBranchField={isSuperAdmin}
         onChange={setValues}
         onSubmit={handleSubmit}
         onCancel={() => navigate(isEdit ? `${basePath}/${id}` : basePath)}

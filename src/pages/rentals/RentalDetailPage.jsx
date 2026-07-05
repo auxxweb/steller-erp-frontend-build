@@ -2,19 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useInvoiceRedirect } from '../../hooks/useInvoiceRedirect.js';
 import Card from '../../components/ui/Card.jsx';
-import Button from '../../components/ui/Button.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import RentalTimeline from '../../components/rentals/RentalTimeline.jsx';
-import useRentalBasePath, { useCanWriteRentals, useCanOperateRentals } from '../../hooks/useRentalBasePath.js';
-import {
-  fetchRental,
-  reserveRental,
-  confirmRental,
-  pickupRental,
-  returnRental,
-  cancelRental,
-} from '../../services/rentalService.js';
+import useRentalBasePath, { useCanOperateRentals } from '../../hooks/useRentalBasePath.js';
+import { fetchRental } from '../../services/rentalService.js';
 import { RENTAL_STATUS, RENTAL_TYPE } from '../../utils/rentalConstants.js';
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
@@ -29,13 +21,11 @@ function RentalDetailPage() {
   const { id } = useParams();
   const location = useLocation();
   const basePath = useRentalBasePath();
-  const { goToInvoiceAfterReturn, canOpenInvoice, invoiceBasePath } = useInvoiceRedirect();
-  const canWrite = useCanWriteRentals();
+  const { canOpenInvoice, invoiceBasePath } = useInvoiceRedirect();
   const canOperate = useCanOperateRentals();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState('');
   const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
@@ -62,36 +52,6 @@ function RentalDetailPage() {
   useEffect(() => {
     load();
   }, [id]);
-
-  const runAction = async (key, fn) => {
-    setActionLoading(key);
-    try {
-      const res = await fn();
-      toast.success(res.data.message || 'Updated');
-      await load();
-      return res;
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Action failed'));
-      return null;
-    } finally {
-      setActionLoading('');
-    }
-  };
-
-  const handleReturn = async () => {
-    setActionLoading('return');
-    try {
-      const res = await returnRental(id);
-      toast.success(res.data.message || 'Return completed');
-      if (!goToInvoiceAfterReturn(res, { partial: res.data.data?.partial })) {
-        await load();
-      }
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Return failed'));
-    } finally {
-      setActionLoading('');
-    }
-  };
 
   if (loading) {
     return <p className="text-sm text-stellar-text-muted">Loading booking…</p>;
@@ -201,6 +161,18 @@ function RentalDetailPage() {
               <dt>Total</dt>
               <dd className="tabular-nums">{formatMoney(rental.amounts?.total)}</dd>
             </div>
+            {(rental.amounts?.deposit ?? 0) > 0 && (
+              <>
+                <div className="flex justify-between gap-stellar-4">
+                  <dt className="text-stellar-text-muted">Advance paid</dt>
+                  <dd className="tabular-nums">−{formatMoney(rental.amounts.deposit)}</dd>
+                </div>
+                <div className="flex justify-between gap-stellar-4 font-medium text-stellar-accent">
+                  <dt>Balance due</dt>
+                  <dd className="tabular-nums">{formatMoney(rental.amounts?.balanceDue)}</dd>
+                </div>
+              </>
+            )}
           </dl>
         </Card>
       </div>
@@ -236,92 +208,6 @@ function RentalDetailPage() {
           <RentalTimeline rentalId={id} />
         </div>
       </Card>
-
-      {canWrite && (
-        <Card variant="muted" className="!p-stellar-5">
-          <h2 className="text-sm font-semibold">Actions</h2>
-          <div className="mt-stellar-4 flex flex-wrap gap-stellar-2">
-            {status === RENTAL_STATUS.DRAFT && (
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={Boolean(actionLoading)}
-                onClick={() => runAction('reserve', () => reserveRental(id))}
-              >
-                Reserve
-              </Button>
-            )}
-            {isPrebook && status === RENTAL_STATUS.RESERVED && (
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={Boolean(actionLoading)}
-                onClick={() => runAction('confirm', () => confirmRental(id))}
-              >
-                Confirm booking
-              </Button>
-            )}
-            {isPrebook &&
-              [RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(status) &&
-              canOperate && (
-                <Button
-                  size="sm"
-                  disabled={Boolean(actionLoading)}
-                  onClick={() => runAction('pickup', () => pickupRental(id, { activate: true }))}
-                >
-                  Pickup
-                </Button>
-              )}
-            {[
-              RENTAL_STATUS.ACTIVE,
-              RENTAL_STATUS.OVERDUE,
-              RENTAL_STATUS.PICKED_UP,
-              RENTAL_STATUS.PARTIALLY_RETURNED,
-            ].includes(status) &&
-              canOperate && (
-                <Button
-                  size="sm"
-                  disabled={Boolean(actionLoading)}
-                  onClick={handleReturn}
-                >
-                  Return &amp; invoice
-                </Button>
-              )}
-            {status === RENTAL_STATUS.RETURNED && rental.invoice && canOpenInvoice && (
-              <Link
-                to={`${invoiceBasePath}/${rental.invoice?.id || rental.invoice}`}
-                className="btn btn-primary btn-sm"
-              >
-                Complete invoice
-              </Link>
-            )}
-            {status === RENTAL_STATUS.PARTIALLY_RETURNED && canOperate && (
-              <Button
-                size="sm"
-                disabled={Boolean(actionLoading)}
-                onClick={() => runAction('return', () => returnRental(id))}
-              >
-                Complete return
-              </Button>
-            )}
-            {![RENTAL_STATUS.CANCELLED, RENTAL_STATUS.CLOSED, RENTAL_STATUS.RETURNED].includes(
-              status,
-            ) && (
-              <Button
-                variant="danger"
-                size="sm"
-                disabled={Boolean(actionLoading)}
-                onClick={() => {
-                  const reason = window.prompt('Cancellation reason?');
-                  if (reason) runAction('cancel', () => cancelRental(id, reason));
-                }}
-              >
-                Cancel
-              </Button>
-            )}
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

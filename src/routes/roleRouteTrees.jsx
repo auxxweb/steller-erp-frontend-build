@@ -3,9 +3,7 @@ import RoleRoute from './guards/RoleRoute.jsx';
 import SuperAdminLayout from '../layouts/dashboard/SuperAdminLayout.jsx';
 import BranchAdminLayout from '../layouts/dashboard/BranchAdminLayout.jsx';
 import EmployeeLayout from '../layouts/dashboard/EmployeeLayout.jsx';
-import DeliveryStaffLayout from '../layouts/dashboard/DeliveryStaffLayout.jsx';
 import WorkspaceDashboard from '../pages/dashboard/WorkspaceDashboard.jsx';
-import PlaceholderPage from '../pages/placeholders/PlaceholderPage.jsx';
 import BranchListPage from '../pages/branches/BranchListPage.jsx';
 import BranchFormPage from '../pages/branches/BranchFormPage.jsx';
 import BranchDetailPage from '../pages/branches/BranchDetailPage.jsx';
@@ -19,7 +17,6 @@ import ProductDetailPage from '../pages/products/ProductDetailPage.jsx';
 import ProductAvailabilityPage from '../pages/products/ProductAvailabilityPage.jsx';
 import ProductUnitsPage from '../pages/products/ProductUnitsPage.jsx';
 import ProductInventoryPage from '../pages/products/ProductInventoryPage.jsx';
-import BranchInventoryPage from '../pages/products/BranchInventoryPage.jsx';
 import QrScanPage from '../pages/qr/QrScanPage.jsx';
 import CustomerListPage from '../pages/customers/CustomerListPage.jsx';
 import CustomerFormPage from '../pages/customers/CustomerFormPage.jsx';
@@ -36,23 +33,9 @@ import RentalDetailPage from '../pages/rentals/RentalDetailPage.jsx';
 import ComboListPage from '../pages/combos/ComboListPage.jsx';
 import ComboFormPage from '../pages/combos/ComboFormPage.jsx';
 import ComboDetailPage from '../pages/combos/ComboDetailPage.jsx';
-import TransferHubPage from '../pages/transfers/TransferHubPage.jsx';
-import TransferRequestsPage from '../pages/transfers/TransferRequestsPage.jsx';
-import TransferPendingPage from '../pages/transfers/TransferPendingPage.jsx';
-import TransferTrackingPage from '../pages/transfers/TransferTrackingPage.jsx';
-import TransferListPage, {
-  TransferIncomingPage,
-  TransferOutgoingPage,
-} from '../pages/transfers/TransferListPage.jsx';
-import TransferCreatePage from '../pages/transfers/TransferCreatePage.jsx';
-import TransferDetailPage from '../pages/transfers/TransferDetailPage.jsx';
-import TransferDispatchPage from '../pages/transfers/TransferDispatchPage.jsx';
-import TransferDeliveryPage from '../pages/transfers/TransferDeliveryPage.jsx';
 import InvoiceListPage from '../pages/invoices/InvoiceListPage.jsx';
 import InvoiceDetailPage from '../pages/invoices/InvoiceDetailPage.jsx';
-import ReportsHubPage from '../pages/reports/ReportsHubPage.jsx';
 import RentalJobReportPage from '../pages/reports/RentalJobReportPage.jsx';
-import SalesReportPage from '../pages/reports/SalesReportPage.jsx';
 import SettingsPage from '../pages/settings/SettingsPage.jsx';
 import BranchTeamPage from '../pages/team/BranchTeamPage.jsx';
 import EmployeeAttendancePage from '../pages/attendance/EmployeeAttendancePage.jsx';
@@ -112,20 +95,9 @@ export const superAdminRoutes = (
       <Route path="rentals/:id" element={<RentalDetailPage />} />
       <Route path="invoices" element={<InvoiceListPage />} />
       <Route path="invoices/:id" element={<InvoiceDetailPage />} />
-      <Route path="reports" element={<ReportsHubPage />} />
+      <Route path="reports" element={<Navigate to="rental-jobs" replace />} />
       <Route path="reports/rental-jobs" element={<RentalJobReportPage />} />
-      <Route path="reports/sales" element={<SalesReportPage />} />
-      <Route path="transfers" element={<TransferHubPage />} />
-      <Route path="transfers/requests" element={<TransferRequestsPage />} />
-      <Route path="transfers/pending" element={<TransferPendingPage />} />
-      <Route path="transfers/tracking" element={<TransferTrackingPage />} />
-      <Route path="transfers/list" element={<TransferListPage />} />
-      <Route path="transfers/incoming" element={<TransferIncomingPage />} />
-      <Route path="transfers/outgoing" element={<TransferOutgoingPage />} />
-      <Route path="transfers/new" element={<TransferCreatePage />} />
-      <Route path="transfers/dispatch" element={<TransferDispatchPage />} />
-      <Route path="transfers/delivery" element={<TransferDeliveryPage />} />
-      <Route path="transfers/:id" element={<TransferDetailPage />} />
+      <Route path="reports/sales" element={<Navigate to="../rental-jobs" replace />} />
       <Route path="settings" element={<SettingsPage />} />
       <Route path="profile" element={<Navigate to="/admin/settings" replace />} />
     </Route>
@@ -174,20 +146,9 @@ export const branchAdminRoutes = (
       <Route path="combos/:id/edit" element={<ComboFormPage />} />
       <Route path="invoices" element={<InvoiceListPage />} />
       <Route path="invoices/:id" element={<InvoiceDetailPage />} />
-      <Route path="reports" element={<ReportsHubPage />} />
+      <Route path="reports" element={<Navigate to="rental-jobs" replace />} />
       <Route path="reports/rental-jobs" element={<RentalJobReportPage />} />
-      <Route path="reports/sales" element={<SalesReportPage />} />
-      <Route path="transfers" element={<TransferHubPage />} />
-      <Route path="transfers/requests" element={<TransferRequestsPage />} />
-      <Route path="transfers/pending" element={<TransferPendingPage />} />
-      <Route path="transfers/tracking" element={<TransferTrackingPage />} />
-      <Route path="transfers/list" element={<TransferListPage />} />
-      <Route path="transfers/incoming" element={<TransferIncomingPage />} />
-      <Route path="transfers/outgoing" element={<TransferOutgoingPage />} />
-      <Route path="transfers/new" element={<TransferCreatePage />} />
-      <Route path="transfers/dispatch" element={<TransferDispatchPage />} />
-      <Route path="transfers/delivery" element={<TransferDeliveryPage />} />
-      <Route path="transfers/:id" element={<TransferDetailPage />} />
+      <Route path="reports/sales" element={<Navigate to="../rental-jobs" replace />} />
       <Route path="attendance" element={<EmployeeAttendancePage />} />
       <Route path="settings" element={<SettingsPage />} />
       <Route path="profile" element={<Navigate to="/branch/settings" replace />} />
@@ -214,41 +175,10 @@ export const employeeRoutes = (
       <Route path="products/*" element={<Navigate to="/employee/rentals" replace />} />
       <Route path="customers/*" element={<Navigate to="/employee/rentals" replace />} />
       <Route path="combos/*" element={<Navigate to="/employee/rentals" replace />} />
-      <Route path="transfers/*" element={<Navigate to="/employee/rentals" replace />} />
       <Route path="scan" element={<Navigate to="/employee/rentals" replace />} />
       <Route path="equipment" element={<Navigate to="/employee/rentals" replace />} />
       <Route path="settings" element={<SettingsPage />} />
       <Route path="profile" element={<Navigate to="/employee/settings" replace />} />
-    </Route>
-  </Route>
-);
-
-/** Delivery Staff protected routes */
-export const deliveryRoutes = (
-  <Route
-    path="/delivery"
-    element={<RoleRoute allowedRoles={[ROLES.DELIVERY_STAFF]} />}
-  >
-    <Route element={<DeliveryStaffLayout />}>
-      <Route index element={<Navigate to="dashboard" replace />} />
-      <Route
-        path="dashboard"
-        element={dashboardElement(ROLES.DELIVERY_STAFF, 'Delivery Dashboard')}
-      />
-      <Route path="scan" element={<QrScanPage />} />
-      <Route path="rentals" element={<RentalHubPage />} />
-      <Route path="rentals/pickup" element={<RentalPickupPage />} />
-      <Route path="rentals/return" element={<RentalReturnPage />} />
-      <Route path="rentals/:id" element={<RentalDetailPage />} />
-      <Route path="transfers" element={<TransferHubPage />} />
-      <Route path="transfers/tracking" element={<TransferTrackingPage />} />
-      <Route path="transfers/dispatch" element={<TransferDispatchPage />} />
-      <Route path="transfers/delivery" element={<TransferDeliveryPage />} />
-      <Route path="transfers/:id" element={<TransferDetailPage />} />
-      <Route path="assignments" element={<PlaceholderPage title="Assignments" description="Today's deliveries." />} />
-      <Route path="routes" element={<PlaceholderPage title="Routes" description="Delivery route planning." />} />
-      <Route path="settings" element={<SettingsPage />} />
-      <Route path="profile" element={<Navigate to="/delivery/settings" replace />} />
     </Route>
   </Route>
 );

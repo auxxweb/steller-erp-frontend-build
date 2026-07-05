@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import ProductStatusBadge from './ProductStatusBadge.jsx';
-import { COMMON_INVENTORY_LABEL } from '../../utils/productConstants.js';
 
 function formatMoney(val) {
   if (val == null || val === '') return '—';
@@ -69,16 +68,6 @@ function ProductTable({ products, loading, basePath, canManage, onDelete }) {
                       <p className="text-xs text-stellar-text-muted">
                         {[product.brand, product.model].filter(Boolean).join(' · ') || '—'}
                       </p>
-                      {(product.inventoryScope === 'common' || product.branch?.code === 'COMMON') && (
-                        <span className="mt-stellar-1 inline-block rounded-full bg-stellar-surface-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stellar-text-subtle">
-                          {COMMON_INVENTORY_LABEL}
-                        </span>
-                      )}
-                      {product.branch?.code && product.branch.code !== 'COMMON' && (
-                        <span className="mt-stellar-1 block text-[10px] text-stellar-text-subtle">
-                          Default location: {product.branch.code}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </td>
@@ -159,7 +148,6 @@ function ProductTable({ products, loading, basePath, canManage, onDelete }) {
                 </div>
                 <p className="mt-stellar-1 text-xs text-stellar-text-muted">
                   {product.sku} · {product.category?.name}
-                  {product.inventoryScope === 'common' ? ` · ${COMMON_INVENTORY_LABEL}` : ''}
                 </p>
                 <p className="mt-stellar-1 text-xs tabular-nums text-stellar-text-muted">
                   {product.availableUnits ?? 0}/{product.totalUnits ?? 0} available ·{' '}

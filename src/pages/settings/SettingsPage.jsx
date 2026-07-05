@@ -29,7 +29,7 @@ const SALES_PATH_SEGMENTS = ['/invoices', '/reports'];
 
 function WorkspaceLinks({ role }) {
   const base = ROLE_BASE_PATHS[role];
-  const hideSales = role === ROLES.EMPLOYEE || role === ROLES.DELIVERY_STAFF;
+  const hideSales = role === ROLES.EMPLOYEE;
   const links = (ROLE_NAV_ITEMS[role] || []).filter((item) => {
     if (item.end || item.to.includes('/settings')) return false;
     if (hideSales && SALES_PATH_SEGMENTS.some((seg) => item.to.includes(seg))) return false;
@@ -377,25 +377,6 @@ function SettingsPage() {
             </Link>
             <Link to="/employee/attendance" className="btn btn-secondary btn-sm">
               Attendance & leave
-            </Link>
-          </div>
-        </SettingsSection>
-      )}
-
-      {role === ROLES.DELIVERY_STAFF && (
-        <SettingsSection title="Deliveries" description="Pickup, returns, and transfer runs.">
-          <div className="flex flex-wrap gap-stellar-2">
-            <Link to="/delivery/rentals/pickup" className="btn btn-secondary btn-sm">
-              Pickup
-            </Link>
-            <Link to="/delivery/rentals/return" className="btn btn-secondary btn-sm">
-              Returns
-            </Link>
-            <Link to="/delivery/transfers" className="btn btn-secondary btn-sm">
-              Transfers
-            </Link>
-            <Link to="/delivery/scan" className="btn btn-secondary btn-sm">
-              QR scan
             </Link>
           </div>
         </SettingsSection>

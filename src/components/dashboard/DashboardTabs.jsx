@@ -2,7 +2,7 @@ import { cn } from '../../utils/cn.js';
 
 function DashboardTabs({ tabs, active, onChange }) {
   return (
-    <div className="flex gap-stellar-1 overflow-x-auto border-b border-stellar-border pb-px scrollbar-stellar">
+    <div className="nav-scroll flex gap-stellar-1 overflow-x-auto border-b border-stellar-border pb-px scrollbar-stellar">
       {tabs.map((tab) => (
         <button
           key={tab.id}

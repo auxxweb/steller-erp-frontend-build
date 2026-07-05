@@ -6,10 +6,6 @@ export const validateProductForm = (values, options = {}) => {
   if (!values.name?.trim()) errors.name = 'Product name is required';
   if (!values.category) errors.category = 'Category is required';
 
-  if (options.requireBranch && !values.branch) {
-    errors.branch = 'Select a branch or common inventory';
-  }
-
   const pricing = values.pricing || {};
   const validateRateGroup = (group, key) => {
     const rates = group || {};
@@ -21,7 +17,6 @@ export const validateProductForm = (values, options = {}) => {
     });
   };
   validateRateGroup(pricing.individual, 'individual');
-  validateRateGroup(pricing.combo, 'combo');
 
   ['depositAmount', 'salePrice'].forEach((key) => {
     const val = pricing[key];

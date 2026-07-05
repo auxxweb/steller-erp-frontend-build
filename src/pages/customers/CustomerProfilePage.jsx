@@ -17,7 +17,7 @@ import {
 import { CUSTOMER_STATUS, CUSTOMER_TYPE } from '../../utils/customerConstants.js';
 
 function formatMoney(val) {
-  if (val == null || val === '') return '—';
+  if (val == null || val === '') return '₹0';
   return `₹${Number(val).toLocaleString('en-IN')}`;
 }
 
@@ -120,10 +120,6 @@ function CustomerProfilePage() {
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between gap-stellar-4">
-                    <dt className="text-stellar-text-muted">Branch</dt>
-                    <dd>{customer.branch?.name || '—'}</dd>
-                  </div>
                 </dl>
               </Card>
 
@@ -135,9 +131,15 @@ function CustomerProfilePage() {
                     <dd className="font-medium tabular-nums">{formatMoney(customer.creditLimit)}</dd>
                   </div>
                   <div className="flex justify-between gap-stellar-4">
-                    <dt className="text-stellar-text-muted">Outstanding</dt>
-                    <dd className="font-medium tabular-nums">
-                      {formatMoney(customer.outstandingBalance)}
+                    <dt className="text-stellar-text-muted">Outstanding due</dt>
+                    <dd
+                      className={`font-semibold tabular-nums ${
+                        (customer.outstandingBalance ?? 0) > 0
+                          ? 'text-stellar-accent'
+                          : 'text-stellar-text'
+                      }`}
+                    >
+                      {formatMoney(customer.outstandingBalance ?? 0)}
                     </dd>
                   </div>
                 </dl>

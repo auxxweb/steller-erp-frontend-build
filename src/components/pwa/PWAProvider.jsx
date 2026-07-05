@@ -39,7 +39,7 @@ function PWAProvider({ children }) {
       )}
       {showOfflineToast && !needRefresh && (
         <div
-          className="fixed bottom-stellar-20 left-1/2 z-[100] -translate-x-1/2 animate-fade-up opacity-0-start"
+          className="fixed bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] left-1/2 z-[100] -translate-x-1/2 animate-fade-up opacity-0-start safe-area-x"
           role="status"
         >
           <p className="rounded-full border border-stellar-border bg-stellar-surface px-stellar-5 py-stellar-2 text-sm font-medium text-stellar-text shadow-stellar-elevated">

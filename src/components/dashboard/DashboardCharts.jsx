@@ -28,17 +28,15 @@ function ChartCard({ title, description, children }) {
  * @param {object} props
  * @param {object} props.charts
  * @param {boolean} props.showSales
- * @param {boolean} props.inline — pie + bar in one card (delivery)
  * @param {boolean} props.splitInline — pie and bar as separate cards on one row (employee)
  */
-function DashboardCharts({ charts = {}, showSales = false, inline = false, splitInline = false }) {
+function DashboardCharts({ charts = {}, showSales = false, splitInline = false }) {
   const hasRentalPie = charts.rentalStatus?.length > 0;
   const hasInvoicePie = showSales && charts.invoiceStatus?.length > 0;
-  const hasTransferPie = charts.transferStatus?.length > 0;
   const hasRentalBar = charts.rentalsTrend?.length > 0;
   const hasSalesBar = showSales && charts.salesTrend?.length > 0;
 
-  if (!hasRentalPie && !hasInvoicePie && !hasTransferPie && !hasRentalBar && !hasSalesBar) {
+  if (!hasRentalPie && !hasInvoicePie && !hasRentalBar && !hasSalesBar) {
     return null;
   }
 
@@ -59,39 +57,6 @@ function DashboardCharts({ charts = {}, showSales = false, inline = false, split
     );
   }
 
-  if (inline) {
-    return (
-      <Card>
-        <Card.Header>
-          <Card.Title>Operations overview</Card.Title>
-          <Card.Description>Status and weekly activity at a glance.</Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <div className="grid gap-stellar-8 md:grid-cols-2 xl:grid-cols-3">
-            {hasRentalPie && (
-              <ChartBlock title="Rentals by status">
-                <SimplePieChart data={charts.rentalStatus} inline />
-              </ChartBlock>
-            )}
-            {hasTransferPie && (
-              <ChartBlock title="Transfers by status">
-                <SimplePieChart data={charts.transferStatus} inline />
-              </ChartBlock>
-            )}
-            {hasRentalBar && (
-              <ChartBlock
-                title="Bookings — last 7 days"
-                className={!hasTransferPie && hasRentalPie ? 'md:col-span-2 xl:col-span-1' : ''}
-              >
-                <SimpleBarChart data={charts.rentalsTrend} valueLabel="New bookings" inline />
-              </ChartBlock>
-            )}
-          </div>
-        </Card.Content>
-      </Card>
-    );
-  }
-
   return (
     <>
       <div className="grid gap-stellar-4 lg:grid-cols-2">
@@ -103,11 +68,6 @@ function DashboardCharts({ charts = {}, showSales = false, inline = false, split
         {hasInvoicePie && (
           <ChartCard title="Invoices by status">
             <SimplePieChart data={charts.invoiceStatus} />
-          </ChartCard>
-        )}
-        {hasTransferPie && (
-          <ChartCard title="Transfers by status">
-            <SimplePieChart data={charts.transferStatus} />
           </ChartCard>
         )}
       </div>

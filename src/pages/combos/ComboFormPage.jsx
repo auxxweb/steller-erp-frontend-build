@@ -8,10 +8,6 @@ import {
   previewPayloadFromForm,
 } from '../../utils/comboFormHelpers.js';
 import useComboBasePath, { useCanManageCombos } from '../../hooks/useComboBasePath.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
-import { COMMON_INVENTORY_VALUE } from '../../utils/comboConstants.js';
-import { fetchBranches } from '../../services/branchService.js';
 import { fetchProducts } from '../../services/productService.js';
 import {
   createCombo,
@@ -26,12 +22,9 @@ function ComboFormPage() {
   const navigate = useNavigate();
   const basePath = useComboBasePath();
   const canManage = useCanManageCombos();
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
 
   const [values, setValues] = useState(initialComboForm);
   const [products, setProducts] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -44,21 +37,10 @@ function ComboFormPage() {
   }, [canManage, basePath, navigate]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches))
-      .catch(() => setBranches([]));
-  }, [isSuperAdmin]);
-
-  useEffect(() => {
-    const params = { limit: 100, status: 'active' };
-    if (isSuperAdmin && values.branch && values.branch !== COMMON_INVENTORY_VALUE) {
-      params.branch = values.branch;
-    }
-    fetchProducts(params)
+    fetchProducts({ limit: 100, status: 'active' })
       .then(({ data }) => setProducts(data.data.products))
       .catch(() => setProducts([]));
-  }, [isSuperAdmin, values.branch]);
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -83,7 +65,7 @@ function ComboFormPage() {
     setPreviewLoading(true);
     setApiError('');
     try {
-      const payload = previewPayloadFromForm(values, isSuperAdmin);
+      const payload = previewPayloadFromForm(values);
       const { data } = await previewCombo(payload);
       setPricingPreview(data.data.pricing);
       setAvailabilityPreview(data.data.availability);
@@ -101,7 +83,7 @@ function ComboFormPage() {
     setApiError('');
     setSubmitting(true);
     try {
-      const payload = formToPayload(values, isSuperAdmin);
+      const payload = formToPayload(values);
       if (isEdit) {
         await updateCombo(id, payload);
         navigate(`${basePath}/${id}`, { state: { message: 'Combo updated' } });
@@ -142,8 +124,6 @@ function ComboFormPage() {
       <ComboForm
         values={values}
         products={products}
-        showBranchField={isSuperAdmin}
-        branches={branches}
         pricingPreview={pricingPreview}
         availabilityPreview={availabilityPreview}
         previewLoading={previewLoading}

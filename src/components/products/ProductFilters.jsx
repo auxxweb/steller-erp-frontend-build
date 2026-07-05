@@ -1,15 +1,13 @@
 import { PRODUCT_STATUS_OPTIONS } from '../../utils/productConstants.js';
+import SearchableSelect from '../ui/SearchableSelect.jsx';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 
 function ProductFilters({
   statusFilter,
   onStatusChange,
   categoryFilter,
   onCategoryChange,
-  branchFilter,
-  onBranchChange,
   categories = [],
-  branches = [],
-  showBranch = false,
 }) {
   return (
     <div className="flex flex-col gap-stellar-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -32,43 +30,17 @@ function ProductFilters({
         </select>
       </div>
       {categories.length > 0 && (
-        <div className="form-group w-full sm:w-44">
-          <label htmlFor="product-category" className="form-label">
-            Category
-          </label>
-          <select
+        <div className="form-group w-full sm:w-52">
+          <SearchableSelect
             id="product-category"
-            className="input w-full"
+            label="Category"
             value={categoryFilter}
             onChange={(e) => onCategoryChange(e.target.value)}
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      {showBranch && branches.length > 0 && (
-        <div className="form-group w-full sm:w-44">
-          <label htmlFor="product-branch" className="form-label">
-            Branch
-          </label>
-          <select
-            id="product-branch"
-            className="input w-full"
-            value={branchFilter}
-            onChange={(e) => onBranchChange(e.target.value)}
-          >
-            <option value="">All branches</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+            options={withEmptyOption(
+              toSelectOptions(categories, { getLabel: (c) => c.name }),
+              'All categories',
+            )}
+          />
         </div>
       )}
     </div>

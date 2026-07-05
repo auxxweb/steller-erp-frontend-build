@@ -39,18 +39,18 @@ function CustomerStatsCards({ stats, loading }) {
 
   return (
     <div className="grid grid-cols-2 gap-stellar-3 lg:grid-cols-4">
-      <StatCard label="Total customers" value={stats.total ?? 0} />
-      <StatCard label="Active" value={active} sub="Ready to rent" />
+      <StatCard label="Total customers" value={stats.total ?? 0} accent="text-indigo-600 dark:text-indigo-400" />
+      <StatCard label="Active" value={active} sub="Ready to rent" accent="text-emerald-600 dark:text-emerald-400" />
       <StatCard
         label="Blocked"
         value={blocked}
-        accent={blocked > 0 ? 'text-red-600' : undefined}
+        accent={blocked > 0 ? 'text-red-600 dark:text-red-400' : 'text-stellar-text-muted'}
       />
       <StatCard
         label="High risk"
         value={highRisk}
         sub={`${business} business`}
-        accent={highRisk > 0 ? 'text-amber-600' : undefined}
+        accent={highRisk > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-violet-600 dark:text-violet-400'}
       />
     </div>
   );

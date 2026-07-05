@@ -7,6 +7,7 @@ import PWAProvider from './components/pwa/PWAProvider.jsx';
 import AuthSessionProvider from './providers/AuthSessionProvider.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import ToastViewport from './components/ui/ToastViewport.jsx';
+import GlobalLoader from './components/ui/GlobalLoader.jsx';
 import './index.css';
 
 assertProductionEnv();
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')).render(
         <ThemeProvider>
           <PWAProvider>
             <App />
+            <GlobalLoader />
             <ToastViewport />
           </PWAProvider>
         </ThemeProvider>

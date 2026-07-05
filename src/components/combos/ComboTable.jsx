@@ -1,12 +1,9 @@
 import { Link } from 'react-router-dom';
 import ComboStatusBadge from './ComboStatusBadge.jsx';
-import {
-  COMBO_PRICING_RULE_OPTIONS,
-  COMMON_INVENTORY_LABEL,
-} from '../../utils/comboConstants.js';
 
-function ruleLabel(rule) {
-  return COMBO_PRICING_RULE_OPTIONS.find((o) => o.value === rule)?.label || rule;
+function formatDailyRate(pricing) {
+  if (pricing?.dailyRate == null || pricing.dailyRate === '') return '—';
+  return `₹${Number(pricing.dailyRate).toLocaleString('en-IN')}/day`;
 }
 
 function ComboTable({ combos, loading, basePath, canManage, onDelete }) {
@@ -19,7 +16,7 @@ function ComboTable({ combos, loading, basePath, canManage, onDelete }) {
   if (!combos?.length) {
     return (
       <div className="p-stellar-8 text-center text-sm text-stellar-text-muted">
-        No combos yet. Create a bundle to offer discounted packages.
+        No combos yet. Create a bundle with multiple products and set its rental rates.
       </div>
     );
   }
@@ -31,9 +28,8 @@ function ComboTable({ combos, loading, basePath, canManage, onDelete }) {
           <thead>
             <tr>
               <th>Combo</th>
-              <th>Scope</th>
               <th>Products</th>
-              <th>Pricing rule</th>
+              <th>Daily rate</th>
               <th>Status</th>
               <th className="text-right">Actions</th>
             </tr>
@@ -47,11 +43,10 @@ function ComboTable({ combos, loading, basePath, canManage, onDelete }) {
                   </Link>
                   <p className="text-xs text-stellar-text-muted">{combo.code}</p>
                 </td>
-                <td className="text-sm text-stellar-text-muted">
-                  {combo.isShared ? COMMON_INVENTORY_LABEL : combo.branch?.name || '—'}
-                </td>
                 <td className="text-sm">{combo.items?.length ?? 0} items</td>
-                <td className="text-sm text-stellar-text-muted">{ruleLabel(combo.pricingRule)}</td>
+                <td className="text-sm tabular-nums text-stellar-text-muted">
+                  {formatDailyRate(combo.pricing)}
+                </td>
                 <td>
                   <ComboStatusBadge status={combo.status} />
                 </td>
@@ -94,7 +89,7 @@ function ComboTable({ combos, loading, basePath, canManage, onDelete }) {
               <ComboStatusBadge status={combo.status} />
             </div>
             <p className="mt-stellar-1 text-xs text-stellar-text-muted">
-              {combo.code} · {combo.items?.length} products
+              {combo.code} · {combo.items?.length} products · {formatDailyRate(combo.pricing)}
             </p>
             <Link to={`${basePath}/${combo.id}`} className="btn btn-ghost btn-sm mt-stellar-3">
               Open

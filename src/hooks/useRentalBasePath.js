@@ -4,7 +4,6 @@ import useAuth from './useAuth.js';
 
 export function useRentalBasePath() {
   const { pathname } = useLocation();
-  if (pathname.startsWith('/delivery')) return '/delivery/rentals';
   if (pathname.startsWith('/employee')) return '/employee/rentals';
   if (pathname.startsWith('/branch')) return '/branch/rentals';
   return '/admin/rentals';
@@ -17,12 +16,7 @@ export function useCanWriteRentals() {
 
 export function useCanOperateRentals() {
   const { user } = useAuth();
-  return [
-    ROLES.SUPER_ADMIN,
-    ROLES.BRANCH_ADMIN,
-    ROLES.EMPLOYEE,
-    ROLES.DELIVERY_STAFF,
-  ].includes(user?.role);
+  return [ROLES.SUPER_ADMIN, ROLES.BRANCH_ADMIN, ROLES.EMPLOYEE].includes(user?.role);
 }
 
 export default useRentalBasePath;

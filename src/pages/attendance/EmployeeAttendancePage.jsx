@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import UserAttendanceCalendar from '../../components/admin/UserAttendanceCalendar.jsx';
 import { fetchMyAttendance } from '../../services/attendanceService.js';
 import { applyLeave, fetchMyLeaves } from '../../services/leaveService.js';
@@ -101,15 +102,15 @@ function EmployeeAttendancePage() {
         <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Attendance & leave</h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
           {isBranchAdmin
-            ? 'Your sign-in times and leave requests. Only super admin can approve branch admin leave.'
-            : 'Your sign-in times and leave requests. Branch admin or super admin will approve leave.'}
+            ? 'Punch in from your dashboard; view history and apply for leave here.'
+            : 'Punch in from your dashboard; view history and apply for leave here.'}
         </p>
       </div>
 
       <Card>
         <Card.Header>
           <Card.Title>Attendance calendar</Card.Title>
-          <Card.Description>Check-in and check-out from panel login.</Card.Description>
+          <Card.Description>Punch in/out times and breaks from the dashboard clock.</Card.Description>
         </Card.Header>
         <Card.Content>
           <UserAttendanceCalendar
@@ -128,23 +129,13 @@ function EmployeeAttendancePage() {
           </Card.Header>
           <Card.Content>
             <form onSubmit={handleApply} className="space-y-stellar-4">
-              <div className="form-group">
-                <label htmlFor="leave-type" className="form-label">
-                  Type
-                </label>
-                <select
-                  id="leave-type"
-                  className="input w-full"
-                  value={form.type}
-                  onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                >
-                  {LEAVE_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                id="leave-type"
+                label="Type"
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                options={LEAVE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              />
               <Input
                 label="From"
                 type="date"

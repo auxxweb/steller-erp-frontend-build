@@ -6,8 +6,6 @@ import RentalTable from '../../components/rentals/RentalTable.jsx';
 import useRentalBasePath, { useCanWriteRentals } from '../../hooks/useRentalBasePath.js';
 import { fetchRentalStats, fetchRentals } from '../../services/rentalService.js';
 import { ACTIVE_RENTAL_STATUSES } from '../../utils/rentalConstants.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
 
 function QuickLink({ to, title, description, accent }) {
   return (
@@ -26,8 +24,6 @@ function QuickLink({ to, title, description, accent }) {
 function RentalHubPage() {
   const basePath = useRentalBasePath();
   const canWrite = useCanWriteRentals();
-  const { user } = useAuth();
-  const isEmployee = user?.role === ROLES.EMPLOYEE;
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,13 +59,9 @@ function RentalHubPage() {
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
       <div className="flex flex-col gap-stellar-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">
-            {isEmployee ? 'My jobs' : 'Rentals'}
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Rentals</h1>
           <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-            {isEmployee
-              ? 'Jobs you created or marked pickup/return on.'
-              : 'Bookings, calendar, pickup and return workflows.'}
+            Bookings, calendar, pickup and return workflows for your branch.
           </p>
         </div>
         {canWrite && (

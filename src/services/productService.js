@@ -3,9 +3,6 @@ import api from './api.js';
 export const fetchInventoryStats = (params) =>
   api.get('/products/inventory/stats', { params });
 
-export const fetchBranchInventory = (params) =>
-  api.get('/products/inventory/branch', { params });
-
 export const fetchProducts = (params) => api.get('/products', { params });
 
 export const fetchProduct = (id) => api.get(`/products/${id}`);

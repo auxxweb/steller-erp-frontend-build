@@ -12,11 +12,8 @@ import Button from '../../components/ui/Button.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
 import ProductStatsCards from '../../components/products/ProductStatsCards.jsx';
 import DeleteProductModal from '../../components/products/DeleteProductModal.jsx';
-import useProductBasePath, { useCanManageProducts } from '../../hooks/useProductBasePath.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
 import { fetchCategories } from '../../services/categoryService.js';
+import useProductBasePath, { useCanManageProducts } from '../../hooks/useProductBasePath.js';
 import {
   fetchProducts,
   fetchInventoryStats,
@@ -26,13 +23,10 @@ import {
 function ProductListPage() {
   const basePath = useProductBasePath();
   const canManage = useCanManageProducts();
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
 
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -50,7 +44,6 @@ function ProductListPage() {
   } = useListFilters();
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [branchFilter, setBranchFilter] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const location = useLocation();
@@ -62,7 +55,7 @@ function ProductListPage() {
         limit: 10,
         status: statusFilter || undefined,
         category: categoryFilter || undefined,
-        branch: branchFilter || undefined,
+        search: search.trim() || undefined,
         ...dateParams,
       });
       setProducts(data.data.products);
@@ -72,7 +65,7 @@ function ProductListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, categoryFilter, branchFilter]);
+  }, [page, dateParams, statusFilter, categoryFilter, search]);
 
   useEffect(() => {
     loadProducts();
@@ -82,21 +75,14 @@ function ProductListPage() {
     fetchCategories({ limit: 100 })
       .then(({ data }) => setCategories(data.data.categories))
       .catch(() => setCategories([]));
-    if (isSuperAdmin) {
-      fetchBranches({ limit: 100 })
-        .then(({ data }) => setBranches(data.data.branches))
-        .catch(() => setBranches([]));
-    }
-  }, [isSuperAdmin]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setStatsLoading(true);
       try {
-        const { data } = await fetchInventoryStats({
-          branch: branchFilter || undefined,
-        });
+        const { data } = await fetchInventoryStats({});
         if (!cancelled) setStats(data.data.stats);
       } finally {
         if (!cancelled) setStatsLoading(false);
@@ -105,7 +91,7 @@ function ProductListPage() {
     return () => {
       cancelled = true;
     };
-  }, [branchFilter]);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -175,14 +161,7 @@ function ProductListPage() {
               setCategoryFilter(v);
               setPage(1);
             }}
-            branchFilter={branchFilter}
-            onBranchChange={(v) => {
-              setBranchFilter(v);
-              setPage(1);
-            }}
             categories={categories}
-            branches={branches}
-            showBranch={isSuperAdmin}
           />
             <Button type="submit" variant="secondary" className="w-full sm:w-auto">
               Search

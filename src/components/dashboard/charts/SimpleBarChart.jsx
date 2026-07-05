@@ -21,8 +21,13 @@ function SimpleBarChart({ data = [], valueLabel = 'Count', formatValue, inline =
                 {d.value > 0 ? fmt(d.value) : ''}
               </span>
               <div
-                className="w-full rounded-t-stellar-sm transition-all duration-200"
-                style={{ height: `${pct}%`, backgroundColor: fill, minHeight: d.value > 0 ? '4px' : 0 }}
+                className="w-full rounded-t-stellar-sm shadow-sm transition-all duration-200"
+                style={{
+                  height: `${pct}%`,
+                  backgroundColor: fill,
+                  minHeight: d.value > 0 ? '4px' : 0,
+                  opacity: d.value > 0 ? 1 : 0.35,
+                }}
                 title={`${d.label}: ${fmt(d.value)}`}
               />
             </div>

@@ -37,11 +37,11 @@ export function createPwaManifest(base = '/') {
   };
 
   return {
-    id: 'stellar-camera-rentals-erp',
-    name: 'Stellar Camera Rentals ERP',
-    short_name: 'Stellar ERP',
+    id: 'steller-rental-software',
+    name: 'Steller Rental Software',
+    short_name: 'Steller',
     description:
-      'Manage camera rentals, inventory, branches, and deliveries — online or offline.',
+      'Steller Rental Software — manage camera rentals, bookings, billing, and inventory.',
     theme_color: '#0a0a0a',
     background_color: '#0a0a0a',
     display: 'standalone',
@@ -55,8 +55,8 @@ export function createPwaManifest(base = '/') {
     prefer_related_applications: false,
     icons,
     screenshots: [
-      { ...screenshot, form_factor: 'narrow', label: 'Stellar ERP mobile' },
-      { ...screenshot, form_factor: 'wide', label: 'Stellar ERP desktop' },
+      { ...screenshot, form_factor: 'narrow', label: 'Steller Rental Software mobile' },
+      { ...screenshot, form_factor: 'wide', label: 'Steller Rental Software desktop' },
     ],
   };
 }

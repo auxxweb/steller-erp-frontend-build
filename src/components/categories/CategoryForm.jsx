@@ -22,8 +22,6 @@ function SelectField({ label, id, error, children, ...props }) {
 function CategoryForm({
   values,
   errors,
-  branches = [],
-  showBranchField = false,
   slugPreview,
   onChange,
   onSlugManualEdit,
@@ -40,7 +38,7 @@ function CategoryForm({
         <Card.Header>
           <Card.Title>Category details</Card.Title>
           <Card.Description>
-            Shared across all branches. Optional location tag is for reference only.
+            Shared across all branches.
           </Card.Description>
         </Card.Header>
         <Card.Content className="grid gap-stellar-4 sm:grid-cols-2">
@@ -77,29 +75,6 @@ function CategoryForm({
               </option>
             ))}
           </SelectField>
-          {showBranchField && (
-            <>
-              <SelectField
-                label="Location tag (optional)"
-                id="branch"
-                name="branch"
-                value={values.branch || ''}
-                onChange={(e) => setField('branch', e.target.value)}
-                error={errors.branch}
-              >
-                <option value="">All branches (no location tag)</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.code})
-                  </option>
-                ))}
-              </SelectField>
-              <p className="sm:col-span-2 text-xs text-stellar-text-muted">
-                Does not restrict who can use this category — only notes where gear in this
-                group is usually kept.
-              </p>
-            </>
-          )}
           <div className="form-group sm:col-span-2">
             <label htmlFor="description" className="form-label">
               Description

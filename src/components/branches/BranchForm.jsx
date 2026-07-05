@@ -1,7 +1,9 @@
 import Input from '../ui/Input.jsx';
 import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
+import SearchableSelect from '../ui/SearchableSelect.jsx';
 import { BRANCH_STATUS_OPTIONS } from '../../utils/branchConstants.js';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 
 function SelectField({ label, id, error, children, ...props }) {
   return (
@@ -76,21 +78,21 @@ function BranchForm({
               </option>
             ))}
           </SelectField>
-          <SelectField
+          <SearchableSelect
             label="Manager"
             id="manager"
             name="manager"
             value={values.manager || ''}
             onChange={(e) => setField('manager', e.target.value || '')}
             error={errors.manager}
-          >
-            <option value="">No manager assigned</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} ({m.email})
-              </option>
-            ))}
-          </SelectField>
+            options={withEmptyOption(
+              toSelectOptions(managers, {
+                getLabel: (m) => `${m.name} (${m.email})`,
+                getKeywords: (m) => `${m.name} ${m.email}`,
+              }),
+              'No manager assigned',
+            )}
+          />
         </Card.Content>
       </Card>
 

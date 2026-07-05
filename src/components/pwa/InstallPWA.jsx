@@ -66,7 +66,7 @@ function InstallPWA() {
   return (
     <div
       className={cn(
-        'fixed bottom-stellar-4 left-stellar-4 right-stellar-4 z-[90] mx-auto max-w-md',
+        'fixed bottom-stellar-4 left-stellar-4 right-stellar-4 z-[90] mx-auto max-w-md pwa-fixed-bottom safe-area-x',
         'animate-fade-up opacity-0-start sm:bottom-stellar-6',
         showIosHint && 'max-w-sm',
       )}
@@ -88,7 +88,7 @@ function InstallPWA() {
           </>
         ) : (
           <>
-            <p className="text-sm font-semibold text-stellar-text">Install Stellar ERP</p>
+            <p className="text-sm font-semibold text-stellar-text">Install Steller Rental Software</p>
             <p className="mt-stellar-1 text-xs text-stellar-text-muted">
               {showIos
                 ? 'Add to your home screen for quick access.'

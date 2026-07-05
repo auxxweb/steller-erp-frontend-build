@@ -24,7 +24,7 @@ function DashboardShell({ role }) {
   const basePath = workspace?.basePath || '';
   const profilePath = `${basePath}/settings`;
   const homePath = `${basePath}/dashboard`;
-  const scanPath = `${basePath}/scan`;
+  const scanPath = null;
 
   useEffect(() => {
     closeMobileDrawer();
@@ -64,8 +64,8 @@ function DashboardShell({ role }) {
           profilePath={profilePath}
         />
 
-        <main className="dashboard-content scrollbar-stellar flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="mx-auto w-full max-w-dashboard p-stellar-4 sm:p-stellar-6 lg:p-stellar-8">
+        <main className="dashboard-content scrollbar-stellar flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
+          <div className="dashboard-content-inner mx-auto w-full max-w-dashboard p-stellar-4 safe-area-bottom sm:p-stellar-6 lg:p-stellar-8">
             <Outlet context={{ role, workspace, user }} />
           </div>
         </main>

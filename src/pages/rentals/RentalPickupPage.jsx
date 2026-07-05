@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
+import RentalQueuePicker from '../../components/rentals/RentalQueuePicker.jsx';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 import RentalQrChecklist from '../../components/rentals/RentalQrChecklist.jsx';
@@ -94,79 +95,85 @@ function RentalPickupPage() {
   };
 
   return (
-    <div className="animate-fade-up opacity-0-start mx-auto max-w-2xl space-y-stellar-6">
+    <div className="animate-fade-up opacity-0-start space-y-stellar-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Prebook pickup</h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-          Prebookings only: select a reservation, scan or assign serial numbers, then confirm
-          pickup. Direct rentals are already active when created.
+          Pick a reservation from the queue, assign serials by tapping or scanning QR, then confirm
+          pickup.
         </p>
       </div>
 
       <RentalNav />
 
-      <Card className="!p-stellar-4">
-        <label htmlFor="pickup-select" className="form-label">
-          Reserved booking
-        </label>
-        <select
-          id="pickup-select"
-          className="input"
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          disabled={loading}
-        >
-          <option value="">Select booking…</option>
-          {queue.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.rentalNumber} — {r.customer?.name} ({formatDate(r.scheduledStartAt)})
-            </option>
-          ))}
-        </select>
-        {!loading && queue.length === 0 && (
-          <p className="mt-stellar-2 text-sm text-stellar-text-muted">No pickups pending.</p>
-        )}
-      </Card>
-
-      {detail && (
-        <Card className="!p-stellar-5 space-y-stellar-5">
-          <div className="flex items-start justify-between gap-stellar-3">
-            <div>
-              <Link
-                to={`${basePath}/${detail.rental.id}`}
-                className="font-semibold text-stellar-text hover:underline"
-              >
-                {detail.rental.rentalNumber}
-              </Link>
-              <p className="text-sm text-stellar-text-muted">{detail.rental.customer?.name}</p>
-            </div>
-            <RentalStatusBadge status={detail.rental.status} />
-          </div>
-
-          <RentalQrChecklist
-            items={detail.items || []}
-            onScannedChange={handleScannedChange}
-            onAssignmentsChange={setUnitAssignments}
+      <div className="grid gap-stellar-6 lg:grid-cols-5">
+        <Card className="!p-stellar-5 lg:col-span-2">
+          <h2 className="mb-stellar-4 text-sm font-semibold text-stellar-text">Pickup queue</h2>
+          <RentalQueuePicker
+            rentals={queue}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            loading={loading}
+            emptyMessage="No prebook pickups pending."
+            dateField="scheduledStartAt"
+            dateLabel="Pickup"
           />
-
-          <Button
-            type="button"
-            className="w-full"
-            disabled={
-              submitting ||
-              !scansReady ||
-              ![RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(detail.rental.status)
-            }
-            onClick={handlePickup}
-          >
-            {submitting
-              ? 'Processing…'
-              : scansReady
-                ? 'Confirm pickup'
-                : 'Assign and scan all units first'}
-          </Button>
         </Card>
-      )}
+
+        <div className="lg:col-span-3">
+          {!detail && (
+            <Card className="flex min-h-[280px] flex-col items-center justify-center !p-stellar-8 text-center">
+              <p className="text-sm font-medium text-stellar-text">Select a booking</p>
+              <p className="mt-stellar-1 max-w-sm text-sm text-stellar-text-muted">
+                Choose a reservation from the queue to assign serial numbers and complete pickup.
+              </p>
+            </Card>
+          )}
+
+          {detail && (
+            <Card className="!p-stellar-5 space-y-stellar-5">
+              <div className="flex items-start justify-between gap-stellar-3 border-b border-stellar-border pb-stellar-4">
+                <div>
+                  <Link
+                    to={`${basePath}/${detail.rental.id}`}
+                    className="text-lg font-semibold text-stellar-text hover:underline"
+                  >
+                    {detail.rental.rentalNumber}
+                  </Link>
+                  <p className="text-sm text-stellar-text">{detail.rental.customer?.name}</p>
+                  <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                    Scheduled pickup {formatDate(detail.rental.scheduledStartAt)}
+                  </p>
+                </div>
+                <RentalStatusBadge status={detail.rental.status} />
+              </div>
+
+              <RentalQrChecklist
+                items={detail.items || []}
+                onScannedChange={handleScannedChange}
+                onAssignmentsChange={setUnitAssignments}
+              />
+
+              <Button
+                type="button"
+                className="w-full"
+                disabled={
+                  submitting ||
+                  !scansReady ||
+                  ![RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(detail.rental.status)
+                }
+                onClick={handlePickup}
+              >
+                {submitting
+                  ? 'Processing…'
+                  : scansReady
+                    ? 'Confirm pickup'
+                    : 'Assign and scan all units first'}
+              </Button>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,6 @@ const styles = {
   [PRODUCT_UNIT_STATUS.RESERVED]: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
   [PRODUCT_UNIT_STATUS.RENTED]: 'bg-violet-500/10 text-violet-700 dark:text-violet-400',
   [PRODUCT_UNIT_STATUS.MAINTENANCE]: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  [PRODUCT_UNIT_STATUS.IN_TRANSFER]: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
   [PRODUCT_UNIT_STATUS.RETIRED]: 'bg-stellar-surface-muted text-stellar-text-muted',
   [PRODUCT_UNIT_STATUS.LOST]: 'bg-red-500/10 text-red-700 dark:text-red-400',
 };

@@ -1,33 +1,22 @@
 import Input from '../ui/Input.jsx';
 import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
+import SearchableSelect from '../ui/SearchableSelect.jsx';
 import { CUSTOMER_TYPE, CUSTOMER_TYPE_OPTIONS } from '../../utils/customerConstants.js';
+import { withEmptyOption } from '../../utils/selectOptions.js';
 
-function SelectField({ label, id, error, value, onChange, children, required }) {
-  return (
-    <div className="form-group">
-      <label htmlFor={id} className="form-label">
-        {label}
-        {required && <span className="text-stellar-danger"> *</span>}
-      </label>
-      <select
-        id={id}
-        className={`input ${error ? 'input-error' : ''}`}
-        value={value}
-        onChange={onChange}
-      >
-        {children}
-      </select>
-      {error && <p className="form-error">{error}</p>}
-    </div>
-  );
-}
+const ID_TYPE_OPTIONS = [
+  { value: 'aadhaar', label: 'Aadhaar' },
+  { value: 'pan', label: 'PAN' },
+  { value: 'passport', label: 'Passport' },
+  { value: 'driving_license', label: 'Driving license' },
+  { value: 'voter_id', label: 'Voter ID' },
+  { value: 'other', label: 'Other' },
+];
 
 function CustomerForm({
   values,
   errors = {},
-  branches = [],
-  showBranchField = false,
   onChange,
   onSubmit,
   onCancel,
@@ -71,29 +60,12 @@ function CustomerForm({
           <Card.Title>Contact details</Card.Title>
         </Card.Header>
         <Card.Content className="grid gap-stellar-4 sm:grid-cols-2">
-          {showBranchField && (
-            <SelectField
-              label="Branch"
-              id="branch"
-              error={errors.branch}
-              value={values.branch}
-              onChange={(e) => setField('branch', e.target.value)}
-              required
-            >
-              <option value="">Select branch</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </SelectField>
-          )}
           <Input
             label={isBusiness ? 'Contact name' : 'Full name'}
+            wrapperClassName="sm:col-span-2"
             value={values.name}
             onChange={(e) => setField('name', e.target.value)}
             error={errors.name}
-            wrapperClassName={showBranchField ? '' : 'sm:col-span-2'}
             required
           />
           <Input
@@ -195,26 +167,13 @@ function CustomerForm({
           <Card.Description>Add details now; upload documents from the customer profile.</Card.Description>
         </Card.Header>
         <Card.Content className="grid gap-stellar-4 sm:grid-cols-2">
-          <SelectField
+          <SearchableSelect
             label="ID type"
             id="idProofType"
             value={values.idProofType}
             onChange={(e) => setField('idProofType', e.target.value)}
-          >
-            <option value="">—</option>
-            {[
-              { value: 'aadhaar', label: 'Aadhaar' },
-              { value: 'pan', label: 'PAN' },
-              { value: 'passport', label: 'Passport' },
-              { value: 'driving_license', label: 'Driving license' },
-              { value: 'voter_id', label: 'Voter ID' },
-              { value: 'other', label: 'Other' },
-            ].map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </SelectField>
+            options={withEmptyOption(ID_TYPE_OPTIONS, '—')}
+          />
           <Input
             label="ID number"
             value={values.idProofNumber}

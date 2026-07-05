@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
 import { fetchBranchTeam, fetchBranchTeamMember } from '../../services/teamService.js';
 import { ROLE_LABELS } from '../../utils/constants.js';
@@ -15,7 +16,6 @@ const BASE = '/branch';
 const ROLE_FILTER_OPTIONS = [
   { value: '', label: 'All roles' },
   { value: 'employee', label: 'Employees' },
-  { value: 'delivery_staff', label: 'Delivery' },
   { value: 'branch_admin', label: 'Branch admin' },
 ];
 
@@ -57,7 +57,6 @@ function activityLink(item) {
   if (!item.entityId) return null;
   if (item.type === 'rental' || item.type === 'timeline') return `${BASE}/rentals/${item.entityId}`;
   if (item.type === 'customer') return `${BASE}/customers/${item.entityId}`;
-  if (item.type === 'transfer') return `${BASE}/transfers/${item.entityId}`;
   if (item.type === 'invoice') return `${BASE}/invoices/${item.entityId}`;
   return null;
 }
@@ -65,7 +64,6 @@ function activityLink(item) {
 const ACTIVITY_TYPE_LABEL = {
   rental: 'Rental',
   customer: 'Customer',
-  transfer: 'Transfer',
   invoice: 'Invoice',
   timeline: 'Rental action',
   audit: 'System',
@@ -155,19 +153,6 @@ function WorksPanel({ works }) {
           <span className="text-stellar-text-muted"> · {a.summary || a.event}</span>
           <span className="block text-[10px] text-stellar-text-subtle">{formatDate(a.createdAt)}</span>
         </div>
-      ),
-    },
-    {
-      key: 'transfers',
-      title: 'Transfers requested',
-      empty: 'No transfers requested yet.',
-      rows: works.transfers,
-      render: (t) => (
-        <Link to={`${BASE}/transfers/${t.id}`} className="block hover:text-stellar-accent">
-          <span className="font-mono font-medium">{t.transferNumber}</span>
-          <span className="text-stellar-text-muted"> · {titleCase(t.status)}</span>
-          <span className="block text-[10px] text-stellar-text-subtle">{formatDate(t.createdAt)}</span>
-        </Link>
       ),
     },
     {
@@ -306,13 +291,11 @@ function MemberDetail({ memberId, listMember, onClose }) {
         </div>
 
         {stats && (
-          <div className="mt-stellar-4 grid grid-cols-3 gap-stellar-2 sm:grid-cols-6">
+          <div className="mt-stellar-4 grid grid-cols-2 gap-stellar-2 sm:grid-cols-4">
             <StatPill label="Rentals" value={stats.rentalsCreated} />
             <StatPill label="Customers" value={stats.customersOnboarded} />
-            <StatPill label="Transfers" value={stats.transfersRequested} />
             <StatPill label="Actions" value={stats.rentalActions} />
             <StatPill label="Invoices" value={stats.invoicesCreated} />
-            <StatPill label="Events" value={stats.auditEvents} />
           </div>
         )}
       </div>
@@ -458,7 +441,7 @@ function BranchTeamPage() {
           <StatPill label="Total members" value={summary.total} />
           <StatPill label="Active" value={summary.active} />
           <StatPill label="Employees" value={summary.byRole?.employee || 0} />
-          <StatPill label="Delivery" value={summary.byRole?.delivery_staff || 0} />
+          <StatPill label="Admins" value={summary.byRole?.branch_admin || 0} />
         </div>
       )}
 
@@ -473,18 +456,14 @@ function BranchTeamPage() {
         dateTo={dateTo}
         onDateToChange={setDateTo}
         extraFilters={
-          <select
-            className="input w-full sm:w-auto"
+          <SearchableSelect
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            aria-label="Filter by role"
-          >
-            {ROLE_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value || 'all'} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            options={ROLE_FILTER_OPTIONS.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
+          />
         }
       />
 

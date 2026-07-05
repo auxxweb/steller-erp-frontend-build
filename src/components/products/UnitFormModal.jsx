@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
 import Input from '../ui/Input.jsx';
+import SearchableSelect from '../ui/SearchableSelect.jsx';
 import { MultiImageUpload } from '../upload/index.js';
 import {
   EMPTY_UNIT_FORM,
@@ -103,18 +104,13 @@ function UnitFormModal({ open, unit, productId, onSubmit, onClose, loading }) {
             disabled={isEdit}
           />
           <div className="grid gap-stellar-4 sm:grid-cols-2">
-            <SelectField
+            <SearchableSelect
               label="Condition"
               id="condition"
               value={values.condition}
               onChange={(e) => setField('condition', e.target.value)}
-            >
-              {CONDITION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </SelectField>
+              options={CONDITION_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+            />
             {isEdit && (
               <SelectField
                 label="Status"

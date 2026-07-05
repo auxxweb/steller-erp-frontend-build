@@ -10,13 +10,8 @@ import ComboTable from '../../components/combos/ComboTable.jsx';
 import ComboStatsCards from '../../components/combos/ComboStatsCards.jsx';
 import {
   COMBO_STATUS_OPTIONS,
-  COMMON_INVENTORY_BRANCH_CODE,
-  COMMON_INVENTORY_LABEL,
 } from '../../utils/comboConstants.js';
 import useComboBasePath, { useCanManageCombos } from '../../hooks/useComboBasePath.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
 import { fetchCombos, fetchComboStats, deleteCombo } from '../../services/comboService.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
@@ -24,12 +19,9 @@ import useListFilters from '../../hooks/useListFilters.js';
 function ComboListPage() {
   const basePath = useComboBasePath();
   const canManage = useCanManageCombos();
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
 
   const [combos, setCombos] = useState([]);
   const [stats, setStats] = useState(null);
-  const [branches, setBranches] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -46,7 +38,6 @@ function ComboListPage() {
     dateParams,
   } = useListFilters();
   const [statusFilter, setStatusFilter] = useState('');
-  const [branchFilter, setBranchFilter] = useState('');
   const location = useLocation();
     const loadCombos = useCallback(async () => {
     setLoading(true);
@@ -55,7 +46,7 @@ function ComboListPage() {
         page,
         limit: 10,
         status: statusFilter || undefined,
-        branch: branchFilter || undefined,
+        search: search.trim() || undefined,
         ...dateParams,
       });
       setCombos(data.data.combos);
@@ -65,7 +56,7 @@ function ComboListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, branchFilter]);
+  }, [page, dateParams, statusFilter, search]);
 
   useEffect(() => {
     loadCombos();
@@ -76,9 +67,7 @@ function ComboListPage() {
     (async () => {
       setStatsLoading(true);
       try {
-        const { data } = await fetchComboStats({
-          branch: branchFilter || undefined,
-        });
+        const { data } = await fetchComboStats({});
         if (!cancelled) setStats(data.data.stats);
       } finally {
         if (!cancelled) setStatsLoading(false);
@@ -87,14 +76,7 @@ function ComboListPage() {
     return () => {
       cancelled = true;
     };
-  }, [branchFilter]);
-
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches))
-      .catch(() => setBranches([]));
-  }, [isSuperAdmin]);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -108,7 +90,7 @@ function ComboListPage() {
       const { data } = await deleteCombo(combo.id);
       toast.success(data.message);
       loadCombos();
-      const statsRes = await fetchComboStats({ branch: branchFilter || undefined });
+      const statsRes = await fetchComboStats({});
       setStats(statsRes.data.data.stats);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Delete failed'));
@@ -121,8 +103,7 @@ function ComboListPage() {
         <div>
           <h1 className="text-2xl font-semibold text-stellar-text">Combos</h1>
           <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-            Bundle products with custom pricing. Combos on the shared catalog are available at
-            every branch.
+            Bundle products with custom pricing.
           </p>
         </div>
         {canManage && (
@@ -173,29 +154,6 @@ function ComboListPage() {
                   ))}
                 </select>
               </div>
-              {isSuperAdmin && (
-                <div className="form-group">
-                  <label htmlFor="combo-branch" className="form-label">
-                    Branch
-                  </label>
-                  <select
-                    id="combo-branch"
-                    className="input w-full"
-                    value={branchFilter}
-                    onChange={(e) => setBranchFilter(e.target.value)}
-                  >
-                    <option value="">All combos</option>
-                    <option value="common">{COMMON_INVENTORY_LABEL}</option>
-                    {branches
-                      .filter((b) => b.code !== COMMON_INVENTORY_BRANCH_CODE)
-                      .map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
             </ListFiltersBar>
             <Button type="submit" variant="secondary" className="w-full sm:w-auto">
               Search
@@ -212,12 +170,7 @@ function ComboListPage() {
           canManage={canManage}
           onDelete={canManage ? handleDelete : undefined}
         />
-        <PaginationBar
-          page={pagination.page}
-          pages={pagination.pages}
-          total={pagination.total}
-          onPageChange={setPage}
-        />
+        <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />
       </Card>
     </div>
   );

@@ -24,22 +24,25 @@ function NotificationDropdown() {
   const [loading, setLoading] = useState(false);
   const panelRef = useRef(null);
 
-  const loadNotifications = useCallback(async () => {
-    setLoading(true);
+  const loadNotifications = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
-      const { data } = await fetchNotifications({ limit: 20 });
+      const { data } = await fetchNotifications(
+        { limit: 20 },
+        silent ? { skipGlobalLoader: true } : undefined,
+      );
       setItems(data.data.notifications);
       setUnreadCount(data.data.unreadCount);
     } catch {
       setItems([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadNotifications();
-    const interval = setInterval(loadNotifications, 60000);
+    const interval = setInterval(() => loadNotifications({ silent: true }), 60000);
     return () => clearInterval(interval);
   }, [loadNotifications]);
 

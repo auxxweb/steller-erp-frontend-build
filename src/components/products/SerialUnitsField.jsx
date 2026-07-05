@@ -10,7 +10,7 @@ function SerialUnitsField({ value, onChange, error, disabled = false }) {
         <Card.Title>Serial numbers</Card.Title>
         <Card.Description>
           One serial per physical item (e.g. Sony A7 IV body #1, #2, #3). Rentals, QR scans,
-          transfers, and maintenance always track the individual serial.
+          rentals, and maintenance always track the individual serial.
         </Card.Description>
       </Card.Header>
       <Card.Content>

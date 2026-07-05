@@ -7,8 +7,7 @@ import {
   hasValidationErrors,
   slugify,
 } from '../../utils/categoryValidation.js';
-import useCategoryBasePath, { useIsBranchWorkspace } from '../../hooks/useCategoryBasePath.js';
-import { fetchBranches } from '../../services/branchService.js';
+import useCategoryBasePath from '../../hooks/useCategoryBasePath.js';
 import {
   createCategory,
   updateCategory,
@@ -22,7 +21,6 @@ function categoryToForm(category) {
     description: category.description || '',
     image: category.image || '',
     status: category.status,
-    branch: category.branch?.id || category.branch || '',
   };
 }
 
@@ -33,7 +31,6 @@ function formToPayload(values) {
     description: values.description.trim() || undefined,
     image: values.image.trim() || undefined,
     status: values.status,
-    branch: values.branch || null,
   };
 }
 
@@ -42,21 +39,13 @@ function CategoryFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const basePath = useCategoryBasePath();
-  const isBranchWorkspace = useIsBranchWorkspace();
 
   const [values, setValues] = useState(EMPTY_CATEGORY_FORM);
   const [errors, setErrors] = useState({});
-  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
   const slugManualRef = useRef(false);
-
-  useEffect(() => {
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches))
-      .catch(() => setBranches([]));
-  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -152,8 +141,6 @@ function CategoryFormPage() {
       <CategoryForm
         values={values}
         errors={errors}
-        branches={branches}
-        showBranchField={!isBranchWorkspace}
         slugPreview={slugPreview}
         onChange={setValues}
         onSlugManualEdit={() => {

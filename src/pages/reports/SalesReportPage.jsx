@@ -4,6 +4,7 @@ import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import ReportsNav from '../../components/reports/ReportsNav.jsx';
 import { SalesSummaryCards } from '../../components/reports/ReportSummaryCards.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
@@ -12,6 +13,8 @@ import useInvoiceBasePath from '../../hooks/useInvoiceBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
 import { fetchBranches } from '../../services/branchService.js';
+import { formatBranchDisplay, formatBranchOptionLabel } from '../../utils/branchHelpers.js';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 import { exportSalesReport, fetchSalesReport } from '../../services/reportService.js';
 import { INVOICE_STATUS_LABELS } from '../../utils/invoiceConstants.js';
 import { formatCurrency, formatDate } from '../../utils/format.js';
@@ -185,24 +188,19 @@ function SalesReportPage() {
             </select>
           </div>
           {isSuperAdmin && (
-            <div className="form-group">
-              <label htmlFor="sales-branch" className="form-label">
-                Branch
-              </label>
-              <select
-                id="sales-branch"
-                className="input w-full"
-                value={branchFilter}
-                onChange={(e) => setBranchFilter(e.target.value)}
-              >
-                <option value="">All branches</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              id="sales-branch"
+              label="Branch"
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              options={withEmptyOption(
+                toSelectOptions(branches, {
+                  getLabel: (b) => formatBranchOptionLabel(b),
+                  getKeywords: (b) => `${b.name} ${b.code}`,
+                }),
+                'All branches',
+              )}
+            />
           )}
         </ListFiltersBar>
       </Card>
@@ -213,67 +211,112 @@ function SalesReportPage() {
         ) : invoices.length === 0 ? (
           <p className="p-stellar-5 text-sm text-stellar-text-muted">No invoices match your filters.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stellar-border bg-stellar-surface-muted/50 text-left text-xs uppercase tracking-wide text-stellar-text-muted">
-                  <th className="px-stellar-4 py-stellar-3">Invoice</th>
-                  <th className="px-stellar-4 py-stellar-3">Customer</th>
-                  {isSuperAdmin && <th className="px-stellar-4 py-stellar-3">Branch</th>}
-                  <th className="px-stellar-4 py-stellar-3">Date</th>
-                  <th className="px-stellar-4 py-stellar-3">Total</th>
-                  <th className="px-stellar-4 py-stellar-3">Received</th>
-                  <th className="px-stellar-4 py-stellar-3">Balance</th>
-                  <th className="px-stellar-4 py-stellar-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stellar-border">
-                {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-stellar-surface-muted/30">
-                    <td className="px-stellar-4 py-stellar-3 font-mono">
-                      <Link
-                        to={`${invoiceBase}/${inv.id}`}
-                        className="font-medium text-stellar-accent hover:underline"
-                      >
-                        {inv.invoiceNumber}
-                      </Link>
-                      {inv.isLocked && (
-                        <span className="ml-2 text-xs text-stellar-text-muted">Closed</span>
-                      )}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3">
-                      {inv.customerSnapshot?.name || inv.customer?.name || '—'}
-                    </td>
-                    {isSuperAdmin && (
-                      <td className="px-stellar-4 py-stellar-3">{inv.branch?.name || '—'}</td>
-                    )}
-                    <td className="px-stellar-4 py-stellar-3">{formatDate(inv.issueDate)}</td>
-                    <td className="px-stellar-4 py-stellar-3 tabular-nums">
-                      {formatCurrency(inv.amounts?.total)}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 tabular-nums">
-                      {formatCurrency(
-                        (inv.amounts?.amountPaid ?? 0) + (inv.amounts?.advanceAmount ?? 0),
-                      )}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 tabular-nums">
-                      {formatCurrency(inv.amounts?.balanceDue)}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 capitalize">
-                      {INVOICE_STATUS_LABELS[inv.status] || inv.status}
-                    </td>
+          <>
+            <div className="data-table-scroll hidden md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stellar-border bg-stellar-surface-muted/50 text-left text-xs uppercase tracking-wide text-stellar-text-muted">
+                    <th className="px-stellar-4 py-stellar-3">Invoice</th>
+                    <th className="px-stellar-4 py-stellar-3">Customer</th>
+                    {isSuperAdmin && <th className="px-stellar-4 py-stellar-3">Branch</th>}
+                    <th className="px-stellar-4 py-stellar-3">Date</th>
+                    <th className="px-stellar-4 py-stellar-3">Total</th>
+                    <th className="px-stellar-4 py-stellar-3">Received</th>
+                    <th className="px-stellar-4 py-stellar-3">Balance</th>
+                    <th className="px-stellar-4 py-stellar-3">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-stellar-border">
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-stellar-surface-muted/30">
+                      <td className="px-stellar-4 py-stellar-3 font-mono">
+                        <Link
+                          to={`${invoiceBase}/${inv.id}`}
+                          className="font-medium text-stellar-accent hover:underline"
+                        >
+                          {inv.invoiceNumber}
+                        </Link>
+                        {inv.isLocked && (
+                          <span className="ml-2 text-xs text-stellar-text-muted">Closed</span>
+                        )}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3">
+                        {inv.customerSnapshot?.name || inv.customer?.name || '—'}
+                      </td>
+                      {isSuperAdmin && (
+                        <td className="px-stellar-4 py-stellar-3">{formatBranchDisplay(inv.branch)}</td>
+                      )}
+                      <td className="px-stellar-4 py-stellar-3">{formatDate(inv.issueDate)}</td>
+                      <td className="px-stellar-4 py-stellar-3 tabular-nums">
+                        {formatCurrency(inv.amounts?.total)}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 tabular-nums">
+                        {formatCurrency(
+                          (inv.amounts?.amountPaid ?? 0) + (inv.amounts?.advanceAmount ?? 0),
+                        )}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 tabular-nums">
+                        {formatCurrency(inv.amounts?.balanceDue)}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 capitalize">
+                        {INVOICE_STATUS_LABELS[inv.status] || inv.status}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-stellar-border md:hidden">
+              {invoices.map((inv) => (
+                <li key={inv.id} className="p-stellar-4">
+                  <div className="flex items-start justify-between gap-stellar-2">
+                    <Link
+                      to={`${invoiceBase}/${inv.id}`}
+                      className="font-mono text-sm font-medium text-stellar-accent"
+                    >
+                      {inv.invoiceNumber}
+                    </Link>
+                    <span className="shrink-0 text-xs capitalize text-stellar-text-muted">
+                      {INVOICE_STATUS_LABELS[inv.status] || inv.status}
+                    </span>
+                  </div>
+                  <p className="mt-stellar-1 text-sm text-stellar-text">
+                    {inv.customerSnapshot?.name || inv.customer?.name || '—'}
+                  </p>
+                  <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                    {formatDate(inv.issueDate)}
+                    {isSuperAdmin && inv.branch ? ` · ${formatBranchDisplay(inv.branch)}` : ''}
+                    {inv.isLocked ? ' · Closed' : ''}
+                  </p>
+                  <div className="mt-stellar-2 grid grid-cols-3 gap-stellar-2 text-xs tabular-nums">
+                    <div>
+                      <span className="text-stellar-text-muted">Total</span>
+                      <p className="font-medium text-stellar-text">
+                        {formatCurrency(inv.amounts?.total)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-stellar-text-muted">Received</span>
+                      <p className="font-medium text-stellar-text">
+                        {formatCurrency(
+                          (inv.amounts?.amountPaid ?? 0) + (inv.amounts?.advanceAmount ?? 0),
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-stellar-text-muted">Balance</span>
+                      <p className="font-medium text-stellar-text">
+                        {formatCurrency(inv.amounts?.balanceDue)}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
-        <PaginationBar
-          page={page}
-          pages={pagination.pages}
-          total={pagination.total}
-          onPageChange={setPage}
-        />
+        <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />
       </Card>
 
       <p className="text-center text-xs text-stellar-text-muted">

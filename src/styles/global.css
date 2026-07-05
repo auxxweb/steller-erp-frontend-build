@@ -42,17 +42,17 @@
   --stellar-danger: #dc2626;
   --stellar-focus-ring: rgba(10, 10, 10, 0.35);
 
-  /* Charts — monochrome series aligned with UI accent */
-  --chart-series-1: #0a0a0a;
-  --chart-series-2: #27272a;
-  --chart-series-3: #3f3f46;
-  --chart-series-4: #52525b;
-  --chart-series-5: #71717a;
-  --chart-series-6: #a1a1aa;
-  --chart-series-7: #d4d4d8;
-  --chart-series-8: #e4e4e7;
-  --chart-bar: #0a0a0a;
-  --chart-bar-muted: rgba(10, 10, 10, 0.28);
+  /* Charts — vibrant data palette (UI shell stays monochrome) */
+  --chart-series-1: #6366f1;
+  --chart-series-2: #8b5cf6;
+  --chart-series-3: #ec4899;
+  --chart-series-4: #f97316;
+  --chart-series-5: #eab308;
+  --chart-series-6: #22c55e;
+  --chart-series-7: #06b6d4;
+  --chart-series-8: #3b82f6;
+  --chart-bar: #6366f1;
+  --chart-bar-muted: rgba(99, 102, 241, 0.22);
 
   /* Spacing scale (4px base) */
   --space-0: 0;
@@ -124,16 +124,16 @@
   --stellar-inverse-fg: #fafafa;
   --stellar-focus-ring: rgba(250, 250, 250, 0.4);
 
-  --chart-series-1: #fafafa;
-  --chart-series-2: #e4e4e7;
-  --chart-series-3: #d4d4d8;
-  --chart-series-4: #a1a1aa;
-  --chart-series-5: #71717a;
-  --chart-series-6: #52525b;
-  --chart-series-7: #3f3f46;
-  --chart-series-8: #27272a;
-  --chart-bar: #fafafa;
-  --chart-bar-muted: rgba(250, 250, 250, 0.28);
+  --chart-series-1: #818cf8;
+  --chart-series-2: #a78bfa;
+  --chart-series-3: #f472b6;
+  --chart-series-4: #fb923c;
+  --chart-series-5: #facc15;
+  --chart-series-6: #4ade80;
+  --chart-series-7: #22d3ee;
+  --chart-series-8: #60a5fa;
+  --chart-bar: #818cf8;
+  --chart-bar-muted: rgba(129, 140, 248, 0.28);
 
   --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
   --shadow-elevated: 0 4px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -12px rgba(0, 0, 0, 0.6);
@@ -461,8 +461,21 @@
     @apply w-full;
   }
 
+  .data-table-scroll {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
   .data-table {
-    @apply w-full min-w-[640px] border-collapse text-left text-sm;
+    @apply w-full border-collapse text-left text-sm;
+    min-width: 36rem;
+  }
+
+  @media (min-width: 768px) {
+    .data-table {
+      min-width: 40rem;
+    }
   }
 
   .data-table thead {

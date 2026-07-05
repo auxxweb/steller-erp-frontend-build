@@ -1,22 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ProductForm from '../../components/products/ProductForm.jsx';
-import {
-  COMMON_INVENTORY_BRANCH_CODE,
-  COMMON_INVENTORY_VALUE,
-  EMPTY_PRODUCT_FORM,
-} from '../../utils/productConstants.js';
+import { EMPTY_PRODUCT_FORM } from '../../utils/productConstants.js';
 import {
   validateProductForm,
   hasValidationErrors,
 } from '../../utils/productValidation.js';
-import useProductBasePath, {
-  useIsBranchWorkspace,
-  useCanManageProducts,
-} from '../../hooks/useProductBasePath.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
+import useProductBasePath, { useCanManageProducts } from '../../hooks/useProductBasePath.js';
 import { fetchCategories } from '../../services/categoryService.js';
 import {
   createProduct,
@@ -36,11 +26,6 @@ function productToForm(product) {
     model: product.model || product.specs?.model || '',
     sku: product.sku || '',
     category: product.category?.id || product.category || '',
-    branch:
-      product.inventoryScope === 'common' ||
-      product.branch?.code === COMMON_INVENTORY_BRANCH_CODE
-        ? COMMON_INVENTORY_VALUE
-        : product.branch?.id || product.branch || '',
     description: product.description || '',
     status: product.status,
     images: product.images || [],
@@ -49,11 +34,6 @@ function productToForm(product) {
         dailyRate: product.pricing?.individual?.dailyRate ?? product.pricing?.dailyRate ?? '',
         weeklyRate: product.pricing?.individual?.weeklyRate ?? product.pricing?.weeklyRate ?? '',
         monthlyRate: product.pricing?.individual?.monthlyRate ?? product.pricing?.monthlyRate ?? '',
-      },
-      combo: {
-        dailyRate: product.pricing?.combo?.dailyRate ?? '',
-        weeklyRate: product.pricing?.combo?.weeklyRate ?? '',
-        monthlyRate: product.pricing?.combo?.monthlyRate ?? '',
       },
       depositAmount: product.pricing?.depositAmount ?? '',
       salePrice: product.pricing?.salePrice ?? '',
@@ -65,7 +45,7 @@ function productToForm(product) {
   };
 }
 
-function formToPayload(values, isSuperAdmin) {
+function formToPayload(values) {
   const pricing = {};
   const p = values.pricing || {};
   const normalizeRates = (group) => {
@@ -77,7 +57,6 @@ function formToPayload(values, isSuperAdmin) {
     return out;
   };
   pricing.individual = normalizeRates(p.individual);
-  pricing.combo = normalizeRates(p.combo);
   ['depositAmount', 'salePrice'].forEach((k) => {
     const v = p?.[k];
     if (v !== '' && v != null) pricing[k] = Number(v);
@@ -99,12 +78,6 @@ function formToPayload(values, isSuperAdmin) {
   };
 
   if (values.sku?.trim()) payload.sku = values.sku.trim();
-  if (values.branch === COMMON_INVENTORY_VALUE || !values.branch) {
-    payload.inventoryScope = 'common';
-  } else if (isSuperAdmin && values.branch) {
-    payload.branch = values.branch;
-    payload.inventoryScope = 'branch';
-  }
 
   return payload;
 }
@@ -114,16 +87,12 @@ function ProductFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const basePath = useProductBasePath();
-  const isBranchWorkspace = useIsBranchWorkspace();
   const canManage = useCanManageProducts();
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN && !isBranchWorkspace;
 
   const [values, setValues] = useState(EMPTY_PRODUCT_FORM);
   const [imageAssets, setImageAssets] = useState([]);
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
 
@@ -135,12 +104,7 @@ function ProductFormPage() {
     fetchCategories({ limit: 100 })
       .then(({ data }) => setCategories(data.data.categories))
       .catch(() => setCategories([]));
-    if (isSuperAdmin) {
-      fetchBranches({ limit: 100 })
-        .then(({ data }) => setBranches(data.data.branches))
-        .catch(() => setBranches([]));
-    }
-  }, [isSuperAdmin]);
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -166,15 +130,13 @@ function ProductFormPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validateProductForm(values, {
-      requireBranch: isSuperAdmin && !isEdit,
-    });
+    const validationErrors = validateProductForm(values);
     setErrors(validationErrors);
     if (hasValidationErrors(validationErrors)) return;
 
     setSubmitting(true);
     try {
-      const payload = formToPayload(values, isSuperAdmin);
+      const payload = formToPayload(values);
       if (isEdit) {
         await updateProduct(id, payload);
         navigate(`${basePath}/${id}`, { state: { message: 'Product updated' } });
@@ -203,10 +165,6 @@ function ProductFormPage() {
             if (!files.length) continue;
             try {
               const up = await uploadProductUnitImages(files, {
-                branchId:
-                  product.branch?.id ||
-                  product.branchId ||
-                  (values.branch === COMMON_INVENTORY_VALUE ? undefined : values.branch),
                 productId: product.id,
                 unitId: created.id,
               });
@@ -264,8 +222,6 @@ function ProductFormPage() {
         values={values}
         errors={errors}
         categories={categories}
-        branches={branches}
-        showBranchField={isSuperAdmin}
         imageAssets={imageAssets}
         onChange={setValues}
         onImagesChange={setImageAssets}
@@ -274,7 +230,6 @@ function ProductFormPage() {
         isSubmitting={submitting}
         submitLabel={isEdit ? 'Update product' : 'Create product'}
         productId={id}
-        branchId={values.branch}
       />
     </div>
   );

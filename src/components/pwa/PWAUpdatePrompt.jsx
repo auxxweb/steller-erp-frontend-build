@@ -3,7 +3,7 @@ import Button from '../ui/Button.jsx';
 function PWAUpdatePrompt({ onUpdate, onDismiss }) {
   return (
     <div
-      className="fixed bottom-stellar-4 left-stellar-4 right-stellar-4 z-[100] mx-auto max-w-md animate-fade-up opacity-0-start sm:bottom-stellar-6"
+      className="fixed bottom-stellar-4 left-stellar-4 right-stellar-4 z-[100] mx-auto max-w-md pwa-fixed-bottom safe-area-x animate-fade-up opacity-0-start sm:bottom-stellar-6"
       role="dialog"
       aria-labelledby="pwa-update-title"
       aria-live="polite"
@@ -14,7 +14,7 @@ function PWAUpdatePrompt({ onUpdate, onDismiss }) {
             Update available
           </p>
           <p className="mt-stellar-1 text-xs text-stellar-text-muted">
-            A new version of Stellar ERP is ready.
+            A new version of Steller Rental Software is ready.
           </p>
         </div>
         <div className="flex shrink-0 gap-stellar-2">

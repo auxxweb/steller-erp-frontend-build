@@ -92,9 +92,9 @@ function UserAttendanceCalendar({ month, records = [], onMonthChange, loading })
     <div className="space-y-stellar-4">
       <div className="flex flex-wrap items-center justify-between gap-stellar-2 text-sm text-stellar-text-muted">
         <span>
-          {presentCount} day{presentCount === 1 ? '' : 's'} with login activity this month
+          {presentCount} day{presentCount === 1 ? '' : 's'} with punch activity this month
         </span>
-        <span className="text-xs">Times from panel login / logout</span>
+        <span className="text-xs">Times from dashboard punch clock</span>
       </div>
 
       <div className="overflow-hidden rounded-stellar-xl border border-stellar-border bg-stellar-surface">
@@ -163,7 +163,7 @@ function UserAttendanceCalendar({ month, records = [], onMonthChange, loading })
                     !inMonth && 'cursor-default bg-stellar-surface-muted/30 opacity-40',
                     inMonth && 'hover:bg-stellar-surface-muted/60',
                     isSelected && inMonth && 'ring-2 ring-inset ring-stellar-primary',
-                    hasActivity && inMonth && 'bg-emerald-500/5',
+                    hasActivity && inMonth && 'bg-emerald-500/8 ring-1 ring-emerald-500/15',
                   )}
                 >
                   <span
@@ -178,13 +178,13 @@ function UserAttendanceCalendar({ month, records = [], onMonthChange, loading })
                   {inMonth && hasActivity && (
                     <div className="mt-0.5 space-y-0.5 text-[9px] leading-tight text-stellar-text-muted sm:text-[10px]">
                       <div>
-                        <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">
                           In
                         </span>{' '}
                         {formatTime(record.checkInAt)}
                       </div>
                       <div>
-                        <span className="font-medium text-amber-700 dark:text-amber-400">
+                        <span className="font-medium text-amber-600 dark:text-amber-400">
                           Out
                         </span>{' '}
                         {formatTime(record.checkOutAt)}
@@ -210,30 +210,38 @@ function UserAttendanceCalendar({ month, records = [], onMonthChange, loading })
           </h4>
           <dl className="mt-stellar-3 grid gap-stellar-3 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-stellar-text-muted">Login</dt>
+              <dt className="text-stellar-text-muted">Punch in</dt>
               <dd className="font-mono font-medium text-stellar-text">
                 {formatTime(selectedRecord.checkInAt)}
               </dd>
             </div>
             <div>
-              <dt className="text-stellar-text-muted">Logout</dt>
+              <dt className="text-stellar-text-muted">Punch out</dt>
               <dd className="font-mono font-medium text-stellar-text">
                 {formatTime(selectedRecord.checkOutAt)}
               </dd>
             </div>
             <div>
-              <dt className="text-stellar-text-muted">Duration</dt>
+              <dt className="text-stellar-text-muted">Worked</dt>
               <dd className="font-medium text-stellar-text">
                 {formatDuration(selectedRecord.workMinutes)}
               </dd>
             </div>
+            {selectedRecord.breakMinutes > 0 && (
+              <div>
+                <dt className="text-stellar-text-muted">Break</dt>
+                <dd className="font-medium text-stellar-text">
+                  {formatDuration(selectedRecord.breakMinutes)}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
       )}
 
       {selectedKey && !selectedRecord && (
         <p className="text-sm text-stellar-text-muted">
-          No login or logout recorded for this date.
+          No punch activity recorded for this date.
         </p>
       )}
     </div>

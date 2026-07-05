@@ -37,7 +37,7 @@ function ProductSerialUnitsPanel({ productId, basePath, limit = 8 }) {
         </Link>
       </div>
       <p className="mt-stellar-1 text-xs text-stellar-text-muted">
-        Each row is one physical item tracked by serial number for rent, transfer, and QR workflows.
+        Each row is one physical item tracked by serial number for rent and QR workflows.
       </p>
 
       {loading ? (

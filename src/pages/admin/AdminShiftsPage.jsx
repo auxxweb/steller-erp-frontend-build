@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import { fetchBranches } from '../../services/branchService.js';
 import { createShift, fetchShifts } from '../../services/shiftService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
+import { formatBranchOptionLabel } from '../../utils/branchHelpers.js';
+import { toSelectOptions } from '../../utils/selectOptions.js';
 
 const DOW = [
   { value: 0, label: 'Sun' },
@@ -16,6 +19,12 @@ const DOW = [
   { value: 5, label: 'Fri' },
   { value: 6, label: 'Sat' },
 ];
+
+function formatShiftDays(daysOfWeek) {
+  return (daysOfWeek || [])
+    .map((d) => DOW.find((x) => x.value === d)?.label || d)
+    .join(', ');
+}
 
 function AdminShiftsPage() {
   const [branches, setBranches] = useState([]);
@@ -89,16 +98,15 @@ function AdminShiftsPage() {
 
       <Card className="!p-stellar-5">
         <div className="grid gap-stellar-4 sm:grid-cols-2">
-          <div className="form-group">
-            <label className="form-label">Branch</label>
-            <select className="input" value={branch} onChange={(e) => setBranch(e.target.value)}>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} ({b.code})
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Branch"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+            options={toSelectOptions(branches, {
+              getLabel: (b) => formatBranchOptionLabel(b),
+              getKeywords: (b) => `${b.name} ${b.code}`,
+            })}
+          />
           <div />
         </div>
 
@@ -143,38 +151,49 @@ function AdminShiftsPage() {
         </div>
         {loading ? (
           <div className="p-stellar-6 text-sm text-stellar-text-muted">Loading shifts…</div>
+        ) : shifts.length === 0 ? (
+          <div className="p-stellar-6 text-sm text-stellar-text-muted">No shifts yet.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Time</th>
-                  <th>Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shifts.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.name}</td>
-                    <td className="font-mono text-sm">
-                      {s.startTime} - {s.endTime}
-                    </td>
-                    <td className="text-sm text-stellar-text-muted">
-                      {(s.daysOfWeek || []).join(', ')}
-                    </td>
-                  </tr>
-                ))}
-                {shifts.length === 0 && (
+          <>
+            <div className="data-table-scroll hidden md:block">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan={3} className="p-stellar-6 text-sm text-stellar-text-muted">
-                      No shifts yet.
-                    </td>
+                    <th>Name</th>
+                    <th>Time</th>
+                    <th>Days</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {shifts.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.name}</td>
+                      <td className="font-mono text-sm">
+                        {s.startTime} - {s.endTime}
+                      </td>
+                      <td className="text-sm text-stellar-text-muted">
+                        {formatShiftDays(s.daysOfWeek)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-stellar-border md:hidden">
+              {shifts.map((s) => (
+                <li key={s.id} className="p-stellar-4">
+                  <p className="font-medium text-stellar-text">{s.name}</p>
+                  <p className="mt-stellar-1 font-mono text-sm text-stellar-text-muted">
+                    {s.startTime} – {s.endTime}
+                  </p>
+                  <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                    {formatShiftDays(s.daysOfWeek)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </Card>
     </div>

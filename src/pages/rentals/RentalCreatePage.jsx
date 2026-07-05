@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
+import NumberInput from '../../components/ui/NumberInput.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalProductPicker from '../../components/rentals/RentalProductPicker.jsx';
 import AvailabilityBars from '../../components/rentals/AvailabilityBars.jsx';
 import ComboPricingPanel from '../../components/combos/ComboPricingPanel.jsx';
 import ComboAvailabilityPanel from '../../components/combos/ComboAvailabilityPanel.jsx';
+import ComboUnitPicker from '../../components/rentals/ComboUnitPicker.jsx';
 import useRentalBasePath, { useCanWriteRentals } from '../../hooks/useRentalBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
 import { fetchBranches } from '../../services/branchService.js';
+import { formatBranchOptionLabel } from '../../utils/branchHelpers.js';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 import { createCustomer } from '../../services/customerService.js';
 import RentalCustomerPicker, {
   RENTAL_CUSTOMER_MODES,
@@ -18,7 +23,6 @@ import RentalCustomerPicker, {
 import { fetchProducts } from '../../services/productService.js';
 import { fetchCategories } from '../../services/categoryService.js';
 import { fetchCombos, fetchComboPrice } from '../../services/comboService.js';
-import { COMMON_INVENTORY_LABEL } from '../../utils/comboConstants.js';
 import { checkRentalAvailability, createRental } from '../../services/rentalService.js';
 import {
   RENTAL_TYPE,
@@ -29,6 +33,10 @@ import {
 } from '../../utils/rentalConstants.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
+import { inferComboRateType } from '../../utils/comboFormHelpers.js';
+import { buildComboUnitSlots, comboSlotsToPayload } from '../../utils/comboUnitHelpers.js';
+import { computeAdvanceRequirement } from '../../utils/advancePayment.js';
+import { formatCurrency } from '../../utils/format.js';
 
 function RentalCreatePage() {
   const basePath = useRentalBasePath();
@@ -48,6 +56,8 @@ function RentalCreatePage() {
   const [scheduledStartAt, setScheduledStartAt] = useState(defaults.scheduledStartAt);
   const [scheduledEndAt, setScheduledEndAt] = useState(defaults.scheduledEndAt);
   const [notes, setNotes] = useState('');
+  const [advanceAmount, setAdvanceAmount] = useState(0);
+  const [skipAdvancePayment, setSkipAdvancePayment] = useState(false);
   const [reserve, setReserve] = useState(true);
   const [lines, setLines] = useState([
     { category: '', product: '', quantity: 1, rateType: 'daily', productUnit: '', key: 'line-0' },
@@ -59,6 +69,7 @@ function RentalCreatePage() {
   const [combos, setCombos] = useState([]);
   const [availability, setAvailability] = useState(null);
   const [comboPricing, setComboPricing] = useState(null);
+  const [comboUnitSlots, setComboUnitSlots] = useState([]);
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -108,6 +119,47 @@ function RentalCreatePage() {
       .catch(() => setCombos([]));
   }, [isSuperAdmin, branch, effectiveBranchId]);
 
+  const selectedCombo = combos.find((c) => c.id === comboId);
+  const selectedComboItems = selectedCombo?.items || [];
+  const isComboMode = bookingMode === 'combo';
+
+  const scheduleForAdvance = useMemo(
+    () => ({
+      scheduledStartAt: isDirect
+        ? new Date().toISOString()
+        : fromDatetimeLocalValue(scheduledStartAt),
+      scheduledEndAt: fromDatetimeLocalValue(scheduledEndAt),
+    }),
+    [isDirect, scheduledStartAt, scheduledEndAt],
+  );
+
+  const advanceRequirement = useMemo(
+    () =>
+      computeAdvanceRequirement({
+        products,
+        lines,
+        comboItems: isComboMode ? selectedComboItems : [],
+        ...scheduleForAdvance,
+      }),
+    [products, lines, isComboMode, selectedComboItems, scheduleForAdvance],
+  );
+
+  useEffect(() => {
+    setSkipAdvancePayment(false);
+  }, [lines, comboId, bookingMode]);
+
+  const advancePaymentBlocked =
+    advanceRequirement.hasRequired &&
+    !skipAdvancePayment &&
+    advanceAmount < advanceRequirement.required;
+
+  useEffect(() => {
+    const combo = combos.find((c) => c.id === comboId);
+    setComboUnitSlots(buildComboUnitSlots(combo?.items || []));
+    setAvailability(null);
+    setComboPricing(null);
+  }, [comboId, rentalType, combos]);
+
   const buildPayload = (customerId) => {
     const base = {
       branch: isSuperAdmin ? branch : undefined,
@@ -119,10 +171,16 @@ function RentalCreatePage() {
       scheduledEndAt: fromDatetimeLocalValue(scheduledEndAt),
       notes: notes.trim() || undefined,
       reserve,
+      ...(skipAdvancePayment ? { skipAdvancePayment: true } : {}),
+      ...(advanceAmount > 0 ? { deposit: advanceAmount, advancePaid: advanceAmount } : {}),
     };
 
     if (bookingMode === 'combo' && comboId) {
-      return { ...base, combo: comboId };
+      const payload = { ...base, combo: comboId };
+      if (!isPrebook && comboUnitSlots.length) {
+        payload.comboUnits = comboSlotsToPayload(comboUnitSlots);
+      }
+      return payload;
     }
 
     return {
@@ -166,17 +224,18 @@ function RentalCreatePage() {
     setChecking(true);
     setComboPricing(null);
     try {
-      validateDirectSerials();
       const customerId = await resolveCustomerId();
       const payload = buildPayload(customerId);
       const { data } = await checkRentalAvailability(payload);
       setAvailability(data.data);
 
       if (bookingMode === 'combo' && comboId) {
+        const selectedCombo = combos.find((c) => c.id === comboId);
+        const rateType = inferComboRateType(selectedCombo?.pricing || {});
         const priceRes = await fetchComboPrice(comboId, {
           scheduledStartAt: payload.scheduledStartAt,
           scheduledEndAt: payload.scheduledEndAt,
-          rateType: 'daily',
+          rateType,
         });
         setComboPricing(priceRes.data.data.pricing);
       }
@@ -189,15 +248,28 @@ function RentalCreatePage() {
   };
 
   const validateDirectSerials = () => {
-    if (!isDirect || bookingMode !== 'products') return;
-    const missing = lines.filter(
-      (l) => l.product && Number(l.quantity) === 1 && !l.productUnit,
-    );
-    if (missing.length) {
-      const names = missing
-        .map((l) => products.find((p) => String(p.id) === String(l.product))?.name || 'product')
-        .join(', ');
-      throw new Error(`Direct rental requires a serial or QR scan for: ${names}`);
+    if (!isDirect) return;
+    if (bookingMode === 'products') {
+      const missing = lines.filter(
+        (l) => l.product && Number(l.quantity) === 1 && !l.productUnit,
+      );
+      if (missing.length) {
+        const names = missing
+          .map((l) => products.find((p) => String(p.id) === String(l.product))?.name || 'product')
+          .join(', ');
+        throw new Error(`Direct rental requires a serial or QR scan for: ${names}`);
+      }
+      return;
+    }
+    if (bookingMode === 'combo' && comboId) {
+      const slots = comboUnitSlots.length
+        ? comboUnitSlots
+        : buildComboUnitSlots(selectedComboItems);
+      const missing = slots.filter((s) => !s.productUnit);
+      if (missing.length) {
+        const names = missing.map((s) => s.productName).join(', ');
+        throw new Error(`Direct combo rental requires a serial or QR scan for: ${names}`);
+      }
     }
   };
 
@@ -207,6 +279,11 @@ function RentalCreatePage() {
     try {
       if (isComboMode && !comboId) {
         throw new Error('Select a combo bundle');
+      }
+      if (advancePaymentBlocked) {
+        throw new Error(
+          `Advance payment of at least ${formatCurrency(advanceRequirement.required)} is required for selected products, or check skip advance payment`,
+        );
       }
       validateDirectSerials();
       const customerId = await resolveCustomerId();
@@ -226,7 +303,6 @@ function RentalCreatePage() {
   };
 
   const productNames = Object.fromEntries(products.map((p) => [p.id, p.name]));
-  const isComboMode = bookingMode === 'combo';
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
@@ -276,23 +352,20 @@ function RentalCreatePage() {
             </div>
             {isSuperAdmin && (
               <div className="form-group sm:col-span-2">
-                <label htmlFor="booking-branch" className="form-label">
-                  Branch
-                </label>
-                <select
+                <SearchableSelect
                   id="booking-branch"
-                  className="input"
+                  label="Branch"
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
+                  options={withEmptyOption(
+                    toSelectOptions(branches, {
+                      getLabel: (b) => formatBranchOptionLabel(b),
+                      getKeywords: (b) => `${b.name} ${b.code}`,
+                    }),
+                    'Select branch',
+                  )}
                   required
-                >
-                  <option value="">Select branch</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             )}
             <div className="form-group sm:col-span-2">
@@ -355,6 +428,54 @@ function RentalCreatePage() {
               />
               Reserve inventory immediately (locks units)
             </label>
+            <div className="form-group sm:col-span-2">
+              <label htmlFor="advance-amount" className="form-label">
+                Advance amount (₹)
+              </label>
+              <NumberInput
+                id="advance-amount"
+                min={0}
+                allowDecimal={false}
+                value={advanceAmount}
+                onChange={setAdvanceAmount}
+                placeholder="Optional — collected now, deducted from bill"
+              />
+              {advanceRequirement.hasRequired && (
+                <div className="mt-stellar-3 space-y-stellar-2 rounded-stellar-md border border-amber-200 bg-amber-50 p-stellar-3 text-sm text-amber-950">
+                  <p>
+                    Selected product{advanceRequirement.products.length > 1 ? 's require' : ' requires'}{' '}
+                    advance payment:{' '}
+                    <strong>{formatCurrency(advanceRequirement.required)}</strong>
+                    {' '}(
+                    {advanceRequirement.products
+                      .map((p) => `${p.name} ${p.percentage}%`)
+                      .join(', ')}
+                    )
+                  </p>
+                  {advancePaymentBlocked && (
+                    <p className="font-medium">
+                      Collect at least {formatCurrency(advanceRequirement.required)} in advance amount
+                      to create this rental.
+                    </p>
+                  )}
+                  <label className="flex items-center gap-stellar-2">
+                    <input
+                      type="checkbox"
+                      checked={skipAdvancePayment}
+                      onChange={(e) => setSkipAdvancePayment(e.target.checked)}
+                      className="h-4 w-4 accent-stellar-accent"
+                    />
+                    Skip advance payment
+                  </label>
+                </div>
+              )}
+              {!advanceRequirement.hasRequired && (
+                <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                  If the customer pays an advance at booking, enter it here. The bill balance will be
+                  reduced by this amount when the invoice is created.
+                </p>
+              )}
+            </div>
           </Card.Content>
         </Card>
 
@@ -397,42 +518,42 @@ function RentalCreatePage() {
             </div>
             {isPrebook && isComboMode && (
               <p className="text-xs text-stellar-text-muted">
-                Serial numbers are assigned at pickup; the combo reserves all included products for
-                your scheduled dates.
+                Prebook reserves all combo products — assign each serial at pickup (dropdown or QR
+                scan).
+              </p>
+            )}
+            {isDirect && isComboMode && (
+              <p className="text-xs text-stellar-text-muted">
+                Direct combo rental requires a serial for every product in the bundle before
+                booking.
               </p>
             )}
 
             {isComboMode ? (
-              <div className="form-group">
-                <label htmlFor="booking-combo" className="form-label">
-                  Select combo
-                </label>
-                <select
+              <div className="space-y-stellar-4">
+                <SearchableSelect
                   id="booking-combo"
-                  className="input"
+                  label="Select combo"
                   value={comboId}
                   onChange={(e) => setComboId(e.target.value)}
+                  options={withEmptyOption(
+                    toSelectOptions(combos, {
+                      getLabel: (c) =>
+                        `${c.name} (${c.code}) · ${c.items?.length ?? 0} products`,
+                      getKeywords: (c) => `${c.name} ${c.code}`,
+                    }),
+                    'Choose a combo',
+                  )}
                   required
-                >
-                  <option value="">Choose a combo</option>
-                  {combos.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.code})
-                      {c.isShared ? ` · ${COMMON_INVENTORY_LABEL}` : ''} ·{' '}
-                      {c.items?.length ?? 0} products
-                    </option>
-                  ))}
-                </select>
-                {comboId && (
-                  <ul className="mt-stellar-3 space-y-stellar-1 text-sm text-stellar-text-muted">
-                    {combos
-                      .find((c) => c.id === comboId)
-                      ?.items?.map((item) => (
-                        <li key={item.product?.id || item.product}>
-                          {item.product?.name || 'Product'} × {item.quantity}
-                        </li>
-                      ))}
-                  </ul>
+                />
+
+                {comboId && selectedComboItems.length > 0 && (
+                  <ComboUnitPicker
+                    comboItems={selectedComboItems}
+                    slots={comboUnitSlots}
+                    onChange={setComboUnitSlots}
+                    isPrebook={isPrebook}
+                  />
                 )}
               </div>
             ) : (
@@ -517,7 +638,7 @@ function RentalCreatePage() {
           <Button type="button" variant="secondary" onClick={() => navigate(basePath)}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting || advancePaymentBlocked}>
             {submitting ? 'Creating…' : 'Create booking'}
           </Button>
         </div>

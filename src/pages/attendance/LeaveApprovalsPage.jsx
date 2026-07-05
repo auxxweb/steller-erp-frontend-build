@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Modal from '../../components/ui/Modal.jsx';
+import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
+import useListFilters from '../../hooks/useListFilters.js';
 import { approveLeave, fetchLeaveRequests, rejectLeave } from '../../services/leaveService.js';
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
@@ -19,12 +21,22 @@ function LeaveApprovalsPage({ title = 'Leave requests' }) {
   const [actingId, setActingId] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const {
+    period,
+    setPeriod,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    dateParams,
+  } = useListFilters();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await fetchLeaveRequests({
-        status: statusFilter || undefined,
+        status: statusFilter === '' ? 'all' : statusFilter || undefined,
+        ...dateParams,
       });
       setLeaves(data.data.leaves || []);
     } catch (err) {
@@ -33,7 +45,7 @@ function LeaveApprovalsPage({ title = 'Leave requests' }) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, dateParams]);
 
   useEffect(() => {
     load();
@@ -70,27 +82,47 @@ function LeaveApprovalsPage({ title = 'Leave requests' }) {
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
-      <div className="flex flex-wrap items-end justify-between gap-stellar-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">{title}</h1>
-          <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-            {isSuperAdmin
-              ? 'Approve employee leave and branch admin leave (branch admin requests are super admin only).'
-              : 'Approve employee leave for your branch. Branch admin leave is handled by super admin.'}
-          </p>
-        </div>
-        <select
-          className="input w-full sm:w-auto"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          aria-label="Filter by status"
-        >
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="">All</option>
-        </select>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">{title}</h1>
+        <p className="mt-stellar-1 text-sm text-stellar-text-muted">
+          {isSuperAdmin
+            ? 'Approve employee leave and branch admin leave (branch admin requests are super admin only).'
+            : 'Approve employee leave for your branch. Branch admin leave is handled by super admin.'}
+        </p>
       </div>
+
+      <Card>
+        <Card.Content>
+          <ListFiltersBar
+            idPrefix="leave"
+            showSearch={false}
+            period={period}
+            onPeriodChange={setPeriod}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            showSubmit={false}
+          >
+            <div className="form-group">
+              <label htmlFor="leave-status" className="form-label">
+                Status
+              </label>
+              <select
+                id="leave-status"
+                className="input w-full"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="">All</option>
+              </select>
+            </div>
+          </ListFiltersBar>
+        </Card.Content>
+      </Card>
 
       <Card>
         <Card.Content className="!p-0">

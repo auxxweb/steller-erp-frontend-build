@@ -4,15 +4,17 @@ import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import ReportsNav from '../../components/reports/ReportsNav.jsx';
 import { RentalJobSummaryCards } from '../../components/reports/ReportSummaryCards.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
-import useReportBasePath from '../../hooks/useReportBasePath.js';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
 import { fetchBranches } from '../../services/branchService.js';
+import { formatBranchDisplay, formatBranchOptionLabel } from '../../utils/branchHelpers.js';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 import { exportRentalJobReport, fetchRentalJobReport } from '../../services/reportService.js';
 import { RENTAL_STATUS, RENTAL_STATUS_META, RENTAL_TYPE_OPTIONS } from '../../utils/rentalConstants.js';
 
@@ -26,7 +28,6 @@ import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
 function RentalJobReportPage() {
-  const reportBase = useReportBasePath();
   const rentalBase = useRentalBasePath();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
@@ -176,43 +177,30 @@ function RentalJobReportPage() {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label htmlFor="rj-type" className="form-label">
-              Type
-            </label>
-            <select
-              id="rj-type"
-              className="input w-full"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
-              <option value="">All types</option>
-              {RENTAL_TYPE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            id="rj-type"
+            label="Type"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            options={withEmptyOption(
+              RENTAL_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+              'All types',
+            )}
+          />
           {isSuperAdmin && (
-            <div className="form-group">
-              <label htmlFor="rj-branch" className="form-label">
-                Branch
-              </label>
-              <select
-                id="rj-branch"
-                className="input w-full"
-                value={branchFilter}
-                onChange={(e) => setBranchFilter(e.target.value)}
-              >
-                <option value="">All branches</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              id="rj-branch"
+              label="Branch"
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              options={withEmptyOption(
+                toSelectOptions(branches, {
+                  getLabel: (b) => formatBranchOptionLabel(b),
+                  getKeywords: (b) => `${b.name} ${b.code}`,
+                }),
+                'All branches',
+              )}
+            />
           )}
         </ListFiltersBar>
       </Card>
@@ -223,72 +211,107 @@ function RentalJobReportPage() {
         ) : rentals.length === 0 ? (
           <p className="p-stellar-5 text-sm text-stellar-text-muted">No rental jobs match your filters.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stellar-border bg-stellar-surface-muted/50 text-left text-xs uppercase tracking-wide text-stellar-text-muted">
-                  <th className="px-stellar-4 py-stellar-3">Job #</th>
-                  <th className="px-stellar-4 py-stellar-3">Customer</th>
-                  {isSuperAdmin && <th className="px-stellar-4 py-stellar-3">Branch</th>}
-                  <th className="px-stellar-4 py-stellar-3">Status</th>
-                  <th className="px-stellar-4 py-stellar-3">Schedule</th>
-                  <th className="px-stellar-4 py-stellar-3">Total</th>
-                  <th className="px-stellar-4 py-stellar-3">Paid</th>
-                  <th className="px-stellar-4 py-stellar-3">Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stellar-border">
-                {rentals.map((r) => (
-                  <tr key={r.id} className="hover:bg-stellar-surface-muted/30">
-                    <td className="px-stellar-4 py-stellar-3 font-mono">
-                      <Link
-                        to={`${rentalBase}/${r.id}`}
-                        className="font-medium text-stellar-accent hover:underline"
-                      >
-                        {r.rentalNumber}
-                      </Link>
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3">
-                      <div>{r.customer?.name || '—'}</div>
-                      <div className="text-xs text-stellar-text-muted">{r.customer?.phone}</div>
-                    </td>
-                    {isSuperAdmin && (
-                      <td className="px-stellar-4 py-stellar-3">{r.branch?.name || '—'}</td>
-                    )}
-                    <td className="px-stellar-4 py-stellar-3">
-                      <RentalStatusBadge status={r.status} />
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 text-xs">
-                      {formatDate(r.scheduledStartAt)} – {formatDate(r.scheduledEndAt)}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 tabular-nums">
-                      {formatCurrency(r.amounts?.total)}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 tabular-nums">
-                      {formatCurrency(r.amounts?.amountPaid)}
-                    </td>
-                    <td className="px-stellar-4 py-stellar-3 tabular-nums">
-                      {formatCurrency(r.amounts?.balanceDue)}
-                    </td>
+          <>
+            <div className="data-table-scroll hidden md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stellar-border bg-stellar-surface-muted/50 text-left text-xs uppercase tracking-wide text-stellar-text-muted">
+                    <th className="px-stellar-4 py-stellar-3">Job #</th>
+                    <th className="px-stellar-4 py-stellar-3">Customer</th>
+                    {isSuperAdmin && <th className="px-stellar-4 py-stellar-3">Branch</th>}
+                    <th className="px-stellar-4 py-stellar-3">Status</th>
+                    <th className="px-stellar-4 py-stellar-3">Schedule</th>
+                    <th className="px-stellar-4 py-stellar-3">Total</th>
+                    <th className="px-stellar-4 py-stellar-3">Paid</th>
+                    <th className="px-stellar-4 py-stellar-3">Balance</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <PaginationBar
-          page={page}
-          pages={pagination.pages}
-          total={pagination.total}
-          onPageChange={setPage}
-        />
-      </Card>
+                </thead>
+                <tbody className="divide-y divide-stellar-border">
+                  {rentals.map((r) => (
+                    <tr key={r.id} className="hover:bg-stellar-surface-muted/30">
+                      <td className="px-stellar-4 py-stellar-3 font-mono">
+                        <Link
+                          to={`${rentalBase}/${r.id}`}
+                          className="font-medium text-stellar-accent hover:underline"
+                        >
+                          {r.rentalNumber}
+                        </Link>
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3">
+                        <div>{r.customer?.name || '—'}</div>
+                        <div className="text-xs text-stellar-text-muted">{r.customer?.phone}</div>
+                      </td>
+                      {isSuperAdmin && (
+                        <td className="px-stellar-4 py-stellar-3">{formatBranchDisplay(r.branch)}</td>
+                      )}
+                      <td className="px-stellar-4 py-stellar-3">
+                        <RentalStatusBadge status={r.status} />
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 text-xs">
+                        {formatDate(r.scheduledStartAt)} – {formatDate(r.scheduledEndAt)}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 tabular-nums">
+                        {formatCurrency(r.amounts?.total)}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 tabular-nums">
+                        {formatCurrency(r.amounts?.amountPaid)}
+                      </td>
+                      <td className="px-stellar-4 py-stellar-3 tabular-nums">
+                        {formatCurrency(r.amounts?.balanceDue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-      <p className="text-center text-xs text-stellar-text-muted">
-        <Link to={reportBase} className="text-stellar-accent hover:underline">
-          ← Back to reports
-        </Link>
-      </p>
+            <ul className="divide-y divide-stellar-border md:hidden">
+              {rentals.map((r) => (
+                <li key={r.id} className="p-stellar-4">
+                  <div className="flex items-start justify-between gap-stellar-2">
+                    <Link
+                      to={`${rentalBase}/${r.id}`}
+                      className="font-mono text-sm font-medium text-stellar-accent"
+                    >
+                      {r.rentalNumber}
+                    </Link>
+                    <RentalStatusBadge status={r.status} />
+                  </div>
+                  <p className="mt-stellar-1 text-sm text-stellar-text">{r.customer?.name || '—'}</p>
+                  {r.customer?.phone && (
+                    <p className="text-xs text-stellar-text-muted">{r.customer.phone}</p>
+                  )}
+                  <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                    {formatDate(r.scheduledStartAt)} – {formatDate(r.scheduledEndAt)}
+                    {isSuperAdmin && r.branch ? ` · ${formatBranchDisplay(r.branch)}` : ''}
+                  </p>
+                  <div className="mt-stellar-2 grid grid-cols-3 gap-stellar-2 text-xs tabular-nums">
+                    <div>
+                      <span className="text-stellar-text-muted">Total</span>
+                      <p className="font-medium text-stellar-text">
+                        {formatCurrency(r.amounts?.total)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-stellar-text-muted">Paid</span>
+                      <p className="font-medium text-stellar-text">
+                        {formatCurrency(r.amounts?.amountPaid)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-stellar-text-muted">Balance</span>
+                      <p className="font-medium text-stellar-text">
+                        {formatCurrency(r.amounts?.balanceDue)}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />
+      </Card>
     </div>
   );
 }

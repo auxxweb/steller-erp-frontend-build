@@ -1,6 +1,7 @@
 import UnitStatusBadge from './UnitStatusBadge.jsx';
 import Button from '../ui/Button.jsx';
 import { CONDITION_LABELS } from '../../utils/productConstants.js';
+import { formatBranchDisplay } from '../../utils/branchHelpers.js';
 
 function ProductUnitTable({
   units,
@@ -55,7 +56,7 @@ function ProductUnitTable({
                   {CONDITION_LABELS[unit.condition] || unit.condition}
                 </td>
                 <td className="text-sm text-stellar-text-muted">
-                  {unit.branch?.code || unit.branch?.name || '—'}
+                  {formatBranchDisplay(unit.branch)}
                 </td>
                 <td>
                   <div className="flex justify-end gap-stellar-1">

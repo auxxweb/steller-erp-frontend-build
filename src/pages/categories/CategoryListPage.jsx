@@ -11,8 +11,7 @@ import CategoryTable from '../../components/categories/CategoryTable.jsx';
 import CategoryStatsCards from '../../components/categories/CategoryStatsCards.jsx';
 import DeleteCategoryModal from '../../components/categories/DeleteCategoryModal.jsx';
 import { CATEGORY_STATUS_OPTIONS } from '../../utils/categoryConstants.js';
-import useCategoryBasePath, { useIsBranchWorkspace } from '../../hooks/useCategoryBasePath.js';
-import { fetchBranches } from '../../services/branchService.js';
+import useCategoryBasePath from '../../hooks/useCategoryBasePath.js';
 import {
   fetchCategories,
   fetchCategoryStats,
@@ -23,11 +22,9 @@ function CategoryListPage() {
   const basePath = useCategoryBasePath();
   const navigate = useNavigate();
   const location = useLocation();
-  const isBranchWorkspace = useIsBranchWorkspace();
 
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
-  const [branches, setBranches] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -43,7 +40,6 @@ function CategoryListPage() {
     dateParams,
   } = useListFilters();
   const [statusFilter, setStatusFilter] = useState('');
-  const [branchFilter, setBranchFilter] = useState('');
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -55,7 +51,7 @@ function CategoryListPage() {
         page,
         limit: 10,
         status: statusFilter || undefined,
-        branch: branchFilter || undefined,
+        search: search.trim() || undefined,
         ...dateParams,
       });
       setCategories(data.data.categories);
@@ -65,7 +61,7 @@ function CategoryListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, branchFilter]);
+  }, [page, dateParams, statusFilter, search]);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -83,9 +79,7 @@ function CategoryListPage() {
     (async () => {
       setStatsLoading(true);
       try {
-        const { data } = await fetchCategoryStats({
-          branch: branchFilter || undefined,
-        });
+        const { data } = await fetchCategoryStats({});
         if (!cancelled) setStats(data.data.stats);
       } catch {
         if (!cancelled) setStats(null);
@@ -96,14 +90,7 @@ function CategoryListPage() {
     return () => {
       cancelled = true;
     };
-  }, [branchFilter]);
-
-  useEffect(() => {
-    if (isBranchWorkspace) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches))
-      .catch(() => setBranches([]));
-  }, [isBranchWorkspace]);
+  }, []);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -119,7 +106,7 @@ function CategoryListPage() {
       toast.success(data.message);
       setDeleteTarget(null);
       loadCategories();
-      const statsRes = await fetchCategoryStats({ branch: branchFilter || undefined });
+      const statsRes = await fetchCategoryStats({});
       setStats(statsRes.data.data.stats);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Delete failed'));
@@ -136,7 +123,7 @@ function CategoryListPage() {
             Product categories
           </h1>
           <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-            Shared across all branches. Optional location tags are for reference only.
+            Shared across all branches.
           </p>
         </div>
         <Link to={`${basePath}/new`} className="btn btn-primary btn-md">
@@ -186,30 +173,6 @@ function CategoryListPage() {
                   ))}
                 </select>
               </div>
-              {!isBranchWorkspace && branches.length > 0 && (
-                <div className="form-group">
-                  <label htmlFor="category-branch" className="form-label">
-                    Location tag
-                  </label>
-                  <select
-                    id="category-branch"
-                    className="input w-full"
-                    value={branchFilter}
-                    onChange={(e) => {
-                      setBranchFilter(e.target.value);
-                      setPage(1);
-                    }}
-                  >
-                    <option value="">Any location</option>
-                    <option value="global">No location tag</option>
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </ListFiltersBar>
             <Button type="submit" variant="secondary" className="w-full sm:w-auto">
               Search
@@ -221,7 +184,6 @@ function CategoryListPage() {
           categories={categories}
           loading={loading}
           basePath={basePath}
-          showLocation={!isBranchWorkspace}
           onDelete={setDeleteTarget}
         />
 

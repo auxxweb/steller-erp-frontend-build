@@ -88,7 +88,6 @@ function CustomerDetailShell({ customerId, children, toast: initialToast }) {
             {customer.customerType === CUSTOMER_TYPE.BUSINESS && customer.company && (
               <> · {customer.company}</>
             )}
-            {customer.branch?.name && <> · {customer.branch.name}</>}
           </p>
         </div>
         {canManage && (

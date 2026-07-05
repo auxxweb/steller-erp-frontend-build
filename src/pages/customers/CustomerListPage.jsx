@@ -13,9 +13,6 @@ import useListFilters from '../../hooks/useListFilters.js';
 import CustomerStatsCards from '../../components/customers/CustomerStatsCards.jsx';
 import DeleteCustomerModal from '../../components/customers/DeleteCustomerModal.jsx';
 import useCustomerBasePath, { useCanManageCustomers } from '../../hooks/useCustomerBasePath.js';
-import useAuth from '../../hooks/useAuth.js';
-import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
 import {
   fetchCustomers,
   fetchCustomerStats,
@@ -25,12 +22,9 @@ import {
 function CustomerListPage() {
   const basePath = useCustomerBasePath();
   const canManage = useCanManageCustomers();
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
 
   const [customers, setCustomers] = useState([]);
   const [stats, setStats] = useState(null);
-  const [branches, setBranches] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -49,11 +43,11 @@ function CustomerListPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
-  const [branchFilter, setBranchFilter] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const location = useLocation();
-    const loadCustomers = useCallback(async () => {
+
+  const loadCustomers = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await fetchCustomers({
@@ -62,7 +56,7 @@ function CustomerListPage() {
         status: statusFilter || undefined,
         customerType: typeFilter || undefined,
         riskLevel: riskFilter || undefined,
-        branch: branchFilter || undefined,
+        search: search.trim() || undefined,
         ...dateParams,
       });
       setCustomers(data.data.customers);
@@ -72,7 +66,7 @@ function CustomerListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, typeFilter, riskFilter, branchFilter]);
+  }, [page, dateParams, statusFilter, typeFilter, riskFilter, search]);
 
   useEffect(() => {
     loadCustomers();
@@ -83,9 +77,7 @@ function CustomerListPage() {
     (async () => {
       setStatsLoading(true);
       try {
-        const { data } = await fetchCustomerStats({
-          branch: branchFilter || undefined,
-        });
+        const { data } = await fetchCustomerStats({});
         if (!cancelled) setStats(data.data.stats);
       } finally {
         if (!cancelled) setStatsLoading(false);
@@ -94,14 +86,7 @@ function CustomerListPage() {
     return () => {
       cancelled = true;
     };
-  }, [branchFilter]);
-
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches))
-      .catch(() => setBranches([]));
-  }, [isSuperAdmin]);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -117,7 +102,7 @@ function CustomerListPage() {
       toast.success(data.message);
       setDeleteTarget(null);
       loadCustomers();
-      const statsRes = await fetchCustomerStats({ branch: branchFilter || undefined });
+      const statsRes = await fetchCustomerStats({});
       setStats(statsRes.data.data.stats);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Delete failed'));
@@ -132,7 +117,7 @@ function CustomerListPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Customers</h1>
           <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-            One customer record per phone and email across the whole project — search before adding duplicates.
+            One customer record per phone and email — search before adding duplicates.
           </p>
         </div>
         {canManage && (
@@ -145,10 +130,7 @@ function CustomerListPage() {
 
       <Card className="!p-0 overflow-hidden">
         <div className="border-b border-stellar-border p-stellar-4 sm:p-stellar-5">
-          <form
-            onSubmit={handleSearch}
-            className="space-y-stellar-4"
-          >
+          <form onSubmit={handleSearch} className="space-y-stellar-4">
             <ListFiltersBar
               idPrefix="customer"
               search={search}
@@ -166,35 +148,28 @@ function CustomerListPage() {
               showSubmit={false}
             />
             <CustomerFilters
-            statusFilter={statusFilter}
-            onStatusChange={(v) => {
-              setStatusFilter(v);
-              setPage(1);
-            }}
-            typeFilter={typeFilter}
-            onTypeChange={(v) => {
-              setTypeFilter(v);
-              setPage(1);
-            }}
-            riskFilter={riskFilter}
-            onRiskChange={(v) => {
-              setRiskFilter(v);
-              setPage(1);
-            }}
-            branchFilter={branchFilter}
-            onBranchChange={(v) => {
-              setBranchFilter(v);
-              setPage(1);
-            }}
-            branches={branches}
-            showBranch={isSuperAdmin}
-          />
+              statusFilter={statusFilter}
+              onStatusChange={(v) => {
+                setStatusFilter(v);
+                setPage(1);
+              }}
+              typeFilter={typeFilter}
+              onTypeChange={(v) => {
+                setTypeFilter(v);
+                setPage(1);
+              }}
+              riskFilter={riskFilter}
+              onRiskChange={(v) => {
+                setRiskFilter(v);
+                setPage(1);
+              }}
+            />
             <Button type="submit" variant="secondary" className="w-full sm:w-auto">
               Search
             </Button>
           </form>
         </div>
-                <CustomerTable
+        <CustomerTable
           customers={customers}
           loading={loading}
           basePath={basePath}
@@ -209,7 +184,7 @@ function CustomerListPage() {
         open={Boolean(deleteTarget)}
         loading={deleting}
         onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onClose={() => setDeleteTarget(null)}
       />
     </div>
   );

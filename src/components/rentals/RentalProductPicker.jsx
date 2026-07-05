@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '../ui/Button.jsx';
 import NumberInput from '../ui/NumberInput.jsx';
+import SearchableSelect from '../ui/SearchableSelect.jsx';
 import QrScanner from '../qr/QrScanner.jsx';
 import { fetchProductUnits } from '../../services/productService.js';
 import { verifyQr } from '../../services/qrService.js';
@@ -8,6 +9,8 @@ import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 import { RATE_TYPE_OPTIONS } from '../../utils/rentalConstants.js';
 import { UNIT_STATUS_LABELS } from '../../utils/productConstants.js';
+import { formatBranchDisplay } from '../../utils/branchHelpers.js';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 
 const OBJECT_ID_RE = /^[a-f\d]{24}$/i;
 
@@ -199,47 +202,43 @@ function RentalProductPicker({
           >
             <div className="grid gap-stellar-3 sm:grid-cols-12">
               <div className="form-group sm:col-span-4">
-                <label className="form-label">Category</label>
-                <select
-                  className="input"
+                <SearchableSelect
+                  label="Category"
                   value={line.category || ''}
                   onChange={(e) => updateLine(index, 'category', e.target.value)}
+                  options={withEmptyOption(
+                    toSelectOptions(categories, {
+                      valueKey: 'id',
+                      getLabel: (c) => c.name,
+                    }),
+                    'Select category',
+                  )}
                   required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((c) => {
-                    const cid = String(c.id ?? c._id ?? '');
-                    return (
-                      <option key={cid} value={cid}>
-                        {c.name}
-                      </option>
-                    );
-                  })}
-                </select>
+                />
               </div>
 
               <div className="form-group sm:col-span-5">
-                <label className="form-label">Product</label>
-                <select
-                  className="input"
+                <SearchableSelect
+                  label="Product"
                   value={line.product}
                   onChange={(e) => updateLine(index, 'product', e.target.value)}
                   disabled={!line.category}
+                  options={withEmptyOption(
+                    toSelectOptions(categoryProducts, {
+                      getLabel: (p) => {
+                        let text = `${p.name} (${p.sku})`;
+                        if (crossBranch && p.branch) text += ` · ${formatBranchDisplay(p.branch)}`;
+                        if (p.totalUnits != null) {
+                          text += ` — ${p.availableUnits ?? 0}/${p.totalUnits} avail.`;
+                        }
+                        return text;
+                      },
+                      getKeywords: (p) => `${p.sku} ${p.name}`,
+                    }),
+                    line.category ? 'Select product' : 'Select category first',
+                  )}
                   required
-                >
-                  <option value="">
-                    {line.category ? 'Select product' : 'Select category first'}
-                  </option>
-                  {categoryProducts.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku})
-                      {crossBranch && p.branch?.name ? ` · ${p.branch.name}` : ''}
-                      {p.totalUnits != null
-                        ? ` — ${p.availableUnits ?? 0}/${p.totalUnits} avail.`
-                        : ''}
-                    </option>
-                  ))}
-                </select>
+                />
                 {line.category && categoryProducts.length === 0 && (
                   <p className="form-error mt-stellar-1 text-xs">No products in this category.</p>
                 )}
@@ -256,42 +255,35 @@ function RentalProductPicker({
               </div>
 
               <div className="form-group sm:col-span-2">
-                <label className="form-label">Rate</label>
-                <select
-                  className="input"
+                <SearchableSelect
+                  label="Rate"
                   value={line.rateType}
                   onChange={(e) => updateLine(index, 'rateType', e.target.value)}
-                >
-                  {RATE_TYPE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                  options={RATE_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                />
               </div>
             </div>
 
             {showSerialPick && (
               <div className="grid gap-stellar-3 border-t border-stellar-border pt-stellar-3 sm:grid-cols-12">
                 <div className="form-group sm:col-span-6">
-                  <label className="form-label">Serial number</label>
-                  <select
-                    className="input font-mono text-sm"
+                  <SearchableSelect
+                    label="Serial number"
                     value={line.productUnit || ''}
                     onChange={(e) => updateLine(index, 'productUnit', e.target.value)}
                     disabled={loadingProduct === line.product}
+                    className="font-mono text-sm"
+                    options={withEmptyOption(
+                      units.map((u) => ({
+                        value: u.id,
+                        label: `${u.serialNumber}${crossBranch && u.branch ? ` @ ${formatBranchDisplay(u.branch)}` : ''} — ${UNIT_STATUS_LABELS[u.status] || u.status}`,
+                        keywords: u.serialNumber,
+                        disabled: u.status !== 'available',
+                      })),
+                      'Select serial',
+                    )}
                     required
-                  >
-                    <option value="">Select serial</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id} disabled={u.status !== 'available'}>
-                        {u.serialNumber}
-                        {crossBranch && u.branch?.name ? ` @ ${u.branch.name}` : ''}
-                        {' — '}
-                        {UNIT_STATUS_LABELS[u.status] || u.status}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   {line.product && !units.length && loadingProduct !== line.product && (
                     <p className="form-error mt-stellar-1 text-xs">
                       No serial units on {product?.name || 'this product'}. Add units under

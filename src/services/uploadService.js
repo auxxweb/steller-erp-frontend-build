@@ -1,10 +1,7 @@
 import api from './api.js';
 import { buildUploadFormData } from '../utils/uploadHelpers.js';
 import { UPLOAD_ENDPOINTS } from '../utils/uploadConstants.js';
-
-const multipartConfig = {
-  headers: { 'Content-Type': 'multipart/form-data' },
-};
+import { uploadRequestConfig } from '../config/apiTimeouts.js';
 
 /**
  * Upload product images (multiple).
@@ -13,14 +10,14 @@ export const uploadProductImages = (files, meta = {}) =>
   api.post(
     UPLOAD_ENDPOINTS.products,
     buildUploadFormData(files, { fieldName: 'images', meta }),
-    multipartConfig,
+    uploadRequestConfig,
   );
 
 export const uploadProductUnitImages = (files, meta = {}) =>
   api.post(
     UPLOAD_ENDPOINTS.productUnitImages,
     buildUploadFormData(files, { fieldName: 'images', meta }),
-    multipartConfig,
+    uploadRequestConfig,
   );
 
 /**
@@ -30,14 +27,14 @@ export const uploadCustomerDocuments = (files, meta = {}) =>
   api.post(
     UPLOAD_ENDPOINTS.customerDocuments,
     buildUploadFormData(files, { fieldName: 'documents', meta }),
-    multipartConfig,
+    uploadRequestConfig,
   );
 
 export const uploadUserDocuments = (files, meta = {}) =>
   api.post(
     UPLOAD_ENDPOINTS.userDocuments,
     buildUploadFormData(files, { fieldName: 'documents', meta }),
-    multipartConfig,
+    uploadRequestConfig,
   );
 
 /**
@@ -47,7 +44,7 @@ export const uploadMaintenanceImages = (files, meta = {}) =>
   api.post(
     UPLOAD_ENDPOINTS.maintenance,
     buildUploadFormData(files, { fieldName: 'images', meta }),
-    multipartConfig,
+    uploadRequestConfig,
   );
 
 /**
@@ -57,7 +54,7 @@ export const uploadCategoryImage = (file, meta = {}) =>
   api.post(
     UPLOAD_ENDPOINTS.categories,
     buildUploadFormData(file, { fieldName: 'image', meta }),
-    multipartConfig,
+    uploadRequestConfig,
   );
 
 /**

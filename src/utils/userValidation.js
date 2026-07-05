@@ -3,7 +3,7 @@ import { validatePasswordStrength } from './passwordValidation.js';
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
-const ROLES_REQUIRING_BRANCH = [ROLES.BRANCH_ADMIN, ROLES.EMPLOYEE, ROLES.DELIVERY_STAFF];
+const ROLES_REQUIRING_BRANCH = [ROLES.BRANCH_ADMIN, ROLES.EMPLOYEE];
 
 export const validateRegisterUserForm = (values) => {
   const errors = [];
@@ -25,6 +25,10 @@ export const validateRegisterUserForm = (values) => {
 /** Normalize axios / Error messages for display (e.g. toasts). */
 export const getApiErrorMessage = (err, fallback = 'Request failed') => {
   if (!err) return fallback;
+  const msg = err.message || '';
+  if (/timeout exceeded|ECONNABORTED/i.test(msg)) {
+    return 'Request timed out — check your connection or try a smaller file';
+  }
   const data = err.response?.data;
   if (Array.isArray(data?.errors) && data.errors.length) {
     return data.errors.join('. ');

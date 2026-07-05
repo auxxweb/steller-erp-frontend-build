@@ -21,9 +21,26 @@ import { uploadUserDocuments } from '../../services/uploadService.js';
 import { ROLES, ROLE_LABELS } from '../../utils/constants.js';
 import { PASSWORD_HINT } from '../../utils/passwordValidation.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
+import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
 import { toast } from '../../lib/toastStore.js';
 import { formatApiError, validateRegisterUserForm } from '../../utils/userValidation.js';
+import { formatBranchDisplay, formatBranchOptionLabel } from '../../utils/branchHelpers.js';
+import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
+
+const ROLE_OPTIONS = Object.values(ROLES).map((r) => ({
+  value: r,
+  label: ROLE_LABELS[r] || r,
+}));
+
+const branchSelectOptions = (branches) =>
+  withEmptyOption(
+    toSelectOptions(branches, {
+      getLabel: (b) => formatBranchOptionLabel(b),
+      getKeywords: (b) => `${b.name} ${b.code}`,
+    }),
+    'Select branch…',
+  );
 
 const EMPLOYEE_POSITIONS = [
   { value: 'sales_staff', label: 'Sales staff' },
@@ -54,8 +71,8 @@ const EMPTY_SHIFT = {
   daysOfWeek: [1, 2, 3, 4, 5],
 };
 
-const ROLES_REQUIRING_BRANCH = [ROLES.BRANCH_ADMIN, ROLES.EMPLOYEE, ROLES.DELIVERY_STAFF];
-const ROLES_WITH_SHIFTS = [ROLES.EMPLOYEE, ROLES.DELIVERY_STAFF];
+const ROLES_REQUIRING_BRANCH = [ROLES.BRANCH_ADMIN, ROLES.EMPLOYEE];
+const ROLES_WITH_SHIFTS = [ROLES.EMPLOYEE];
 
 const USER_LIST_TABS = [
   { id: 'active', label: 'Active users' },
@@ -316,7 +333,18 @@ function AdminUsersPage() {
     }
   };
 
-  const displayedUsers = userTab === 'deactivated' ? deactivatedUsers : activeUsers;
+  const displayedUsers = useMemo(() => {
+    const list = userTab === 'deactivated' ? deactivatedUsers : activeUsers;
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((u) => {
+      const haystack = [u.name, u.email, u.phone, u.employeeId]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [userTab, activeUsers, deactivatedUsers, search]);
 
   const loadShifts = async (branchId) => {
     if (!branchId) {
@@ -668,7 +696,7 @@ function AdminUsersPage() {
         </Card.Content>
       </Card>
 
-            <div className="flex gap-stellar-2 overflow-x-auto pb-stellar-1 scrollbar-stellar">
+            <div className="nav-scroll flex gap-stellar-2 overflow-x-auto pb-stellar-1 scrollbar-stellar">
         {USER_LIST_TABS.map((t) => {
           const count = t.id === 'deactivated' ? deactivatedUsers.length : activeUsers.length;
           return (
@@ -702,127 +730,200 @@ function AdminUsersPage() {
 
         {loading ? (
           <div className="p-stellar-6 text-sm text-stellar-text-muted">Loading users…</div>
+        ) : displayedUsers.length === 0 ? (
+          <div className="p-stellar-6 text-sm text-stellar-text-muted">
+            {userTab === 'deactivated' ? 'No deactivated users.' : 'No active users yet.'}
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Branch</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedUsers.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.name}</td>
-                    <td>{u.email}</td>
-                    <td>{ROLE_LABELS[u.role] || u.role}</td>
-                    <td>{u.branchId ? branchMap.get(u.branchId)?.name || '—' : '—'}</td>
-                    <td className="capitalize">{u.status || 'active'}</td>
-                    <td className="text-right">
-                      <div className="flex flex-wrap justify-end gap-stellar-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(u);
-                            setModal('viewUser');
-                          }}
-                        >
-                          View
-                        </Button>
-                        {userTab === 'active' ? (
-                          <>
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setAttendanceUser(u)}
-                            >
-                              Attendance
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-stellar-danger"
-                              onClick={() => {
-                                setSelectedUser(u);
-                                setModal('deactivateUser');
-                              }}
-                            >
-                              Deactivate
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedUser(u);
-                                setModal('activateUser');
-                              }}
-                            >
-                              Activate
-                            </Button>
-                            {isSuperAdmin && (
+          <>
+            <div className="data-table-scroll hidden md:block">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Branch</th>
+                    <th>Status</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedUsers.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td>{ROLE_LABELS[u.role] || u.role}</td>
+                      <td>{u.branchId ? formatBranchDisplay(branchMap.get(u.branchId)) : '—'}</td>
+                      <td className="capitalize">{u.status || 'active'}</td>
+                      <td className="text-right">
+                        <div className="flex flex-wrap justify-end gap-stellar-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setModal('viewUser');
+                            }}
+                          >
+                            View
+                          </Button>
+                          {userTab === 'active' ? (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAttendanceUser(u)}
+                              >
+                                Attendance
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-stellar-danger"
                                 onClick={() => {
                                   setSelectedUser(u);
-                                  setModal('deleteUserPermanent');
+                                  setModal('deactivateUser');
                                 }}
                               >
-                                Delete permanently
+                                Deactivate
                               </Button>
-                            )}
-                          </>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(u);
+                                  setModal('activateUser');
+                                }}
+                              >
+                                Activate
+                              </Button>
+                              {isSuperAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-stellar-danger"
+                                  onClick={() => {
+                                    setSelectedUser(u);
+                                    setModal('deleteUserPermanent');
+                                  }}
+                                >
+                                  Delete permanently
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-stellar-border md:hidden">
+              {displayedUsers.map((u) => (
+                <li key={u.id} className="p-stellar-4">
+                  <div className="flex items-start justify-between gap-stellar-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-stellar-text">{u.name}</p>
+                      <p className="mt-stellar-1 truncate text-xs text-stellar-text-muted">{u.email}</p>
+                    </div>
+                    <span className="shrink-0 text-xs capitalize text-stellar-text-muted">
+                      {u.status || 'active'}
+                    </span>
+                  </div>
+                  <p className="mt-stellar-2 text-xs text-stellar-text-muted">
+                    {ROLE_LABELS[u.role] || u.role}
+                    {u.branchId
+                      ? ` · ${formatBranchDisplay(branchMap.get(u.branchId))}`
+                      : ''}
+                  </p>
+                  <div className="mt-stellar-3 flex flex-wrap gap-stellar-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUser(u);
+                        setModal('viewUser');
+                      }}
+                    >
+                      View
+                    </Button>
+                    {userTab === 'active' ? (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                          Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setAttendanceUser(u)}>
+                          Attendance
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-stellar-danger"
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setModal('deactivateUser');
+                          }}
+                        >
+                          Deactivate
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setModal('activateUser');
+                          }}
+                        >
+                          Activate
+                        </Button>
+                        {isSuperAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-stellar-danger"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setModal('deleteUserPermanent');
+                            }}
+                          >
+                            Delete
+                          </Button>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {displayedUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-stellar-6 text-sm text-stellar-text-muted">
-                      {userTab === 'deactivated'
-                        ? 'No deactivated users.'
-                        : 'No active users yet.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </Card>
 
       {/* Add shift */}
       <Modal open={modal === 'addShift'} title="Add shift" onClose={closeModal}>
                 <form onSubmit={handleCreateShift} className="mt-stellar-4 space-y-stellar-4">
-          <div className="form-group">
-            <label className="form-label">Branch</label>
-            <select
-              className="input"
-              value={shiftBranch}
-              onChange={(e) => setShiftBranch(e.target.value)}
-              required
-            >
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} ({b.code})
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Branch"
+            value={shiftBranch}
+            onChange={(e) => setShiftBranch(e.target.value)}
+            options={toSelectOptions(branches, {
+              getLabel: (b) => formatBranchOptionLabel(b),
+              getKeywords: (b) => `${b.name} ${b.code}`,
+            })}
+            required
+          />
           <Input
             label="Shift name"
             value={shiftForm.name}
@@ -879,22 +980,19 @@ function AdminUsersPage() {
 
       {/* View shifts */}
       <Modal open={modal === 'viewShifts'} title="View shifts" onClose={closeModal} className="max-w-3xl">
-                <div className="mt-stellar-4 form-group">
-          <label className="form-label">Branch</label>
-          <select
-            className="input"
+                <div className="mt-stellar-4">
+          <SearchableSelect
+            label="Branch"
             value={viewShiftsBranch}
             onChange={(e) => {
               setViewShiftsBranch(e.target.value);
               loadShifts(e.target.value);
             }}
-          >
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} ({b.code})
-              </option>
-            ))}
-          </select>
+            options={toSelectOptions(branches, {
+              getLabel: (b) => formatBranchOptionLabel(b),
+              getKeywords: (b) => `${b.name} ${b.code}`,
+            })}
+          />
         </div>
         <div className="mt-stellar-4 overflow-x-auto">
           <table className="data-table">
@@ -1070,65 +1168,46 @@ function AdminUsersPage() {
             value={userForm.phone}
             onChange={(e) => setUserForm((s) => ({ ...s, phone: e.target.value }))}
           />
-          <div className={FORM_FIELD}>
-            <label className="form-label">Role</label>
-            <select
-              className={FORM_SELECT}
-              value={userForm.role}
-              onChange={(e) => {
-                const role = e.target.value;
-                setUserForm((s) => ({
-                  ...s,
-                  role,
-                  branch: ROLES_REQUIRING_BRANCH.includes(role) ? s.branch : '',
-                  shiftIds: ROLES_WITH_SHIFTS.includes(role) ? s.shiftIds : [],
-                }));
-              }}
-            >
-              {Object.values(ROLES).map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABELS[r] || r}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Role"
+            wrapperClassName={FORM_FIELD}
+            className={FORM_SELECT}
+            value={userForm.role}
+            onChange={(e) => {
+              const role = e.target.value;
+              setUserForm((s) => ({
+                ...s,
+                role,
+                branch: ROLES_REQUIRING_BRANCH.includes(role) ? s.branch : '',
+                shiftIds: ROLES_WITH_SHIFTS.includes(role) ? s.shiftIds : [],
+              }));
+            }}
+            options={ROLE_OPTIONS}
+          />
           {ROLES_REQUIRING_BRANCH.includes(userForm.role) && (
-            <div className={FORM_FIELD}>
-              <label className="form-label">Branch</label>
-              <select
-                className={FORM_SELECT}
-                value={userForm.branch}
-                onChange={(e) =>
-                  setUserForm((s) => ({ ...s, branch: e.target.value, shiftIds: [] }))
-                }
-                required
-              >
-                <option value="">Select branch…</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              label="Branch"
+              wrapperClassName={FORM_FIELD}
+              className={FORM_SELECT}
+              value={userForm.branch}
+              onChange={(e) =>
+                setUserForm((s) => ({ ...s, branch: e.target.value, shiftIds: [] }))
+              }
+              options={branchSelectOptions(branches)}
+              required
+            />
           )}
           {userForm.role === ROLES.EMPLOYEE && (
-            <div className={FORM_FIELD}>
-              <label className="form-label">Employee type</label>
-              <select
-                className={FORM_SELECT}
-                value={userForm.employeePosition}
-                onChange={(e) =>
-                  setUserForm((s) => ({ ...s, employeePosition: e.target.value }))
-                }
-              >
-                {EMPLOYEE_POSITIONS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              label="Employee type"
+              wrapperClassName={FORM_FIELD}
+              className={FORM_SELECT}
+              value={userForm.employeePosition}
+              onChange={(e) =>
+                setUserForm((s) => ({ ...s, employeePosition: e.target.value }))
+              }
+              options={EMPLOYEE_POSITIONS.map((p) => ({ value: p.value, label: p.label }))}
+            />
           )}
           {ROLES_WITH_SHIFTS.includes(userForm.role) && userForm.branch && (
             <div className={`${FORM_FIELD} col-span-full`}>
@@ -1174,7 +1253,7 @@ function AdminUsersPage() {
               <dt className="text-stellar-text-muted">Branch</dt>
               <dd>
                 {selectedUser.branchId
-                  ? branchMap.get(selectedUser.branchId)?.name || selectedUser.branchId
+                  ? formatBranchDisplay(branchMap.get(selectedUser.branchId))
                   : '—'}
               </dd>
             </div>
@@ -1282,65 +1361,46 @@ function AdminUsersPage() {
               value={editForm.phone}
               onChange={(e) => setEditForm((s) => ({ ...s, phone: e.target.value }))}
             />
-            <div className={FORM_FIELD}>
-              <label className="form-label">Role</label>
-              <select
-                className={FORM_SELECT}
-                value={editForm.role}
-                onChange={(e) => {
-                  const role = e.target.value;
-                  setEditForm((s) => ({
-                    ...s,
-                    role,
-                    branch: ROLES_REQUIRING_BRANCH.includes(role) ? s.branch : '',
-                    shiftIds: ROLES_WITH_SHIFTS.includes(role) ? s.shiftIds : [],
-                  }));
-                }}
-              >
-                {Object.values(ROLES).map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r] || r}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              label="Role"
+              wrapperClassName={FORM_FIELD}
+              className={FORM_SELECT}
+              value={editForm.role}
+              onChange={(e) => {
+                const role = e.target.value;
+                setEditForm((s) => ({
+                  ...s,
+                  role,
+                  branch: ROLES_REQUIRING_BRANCH.includes(role) ? s.branch : '',
+                  shiftIds: ROLES_WITH_SHIFTS.includes(role) ? s.shiftIds : [],
+                }));
+              }}
+              options={ROLE_OPTIONS}
+            />
             {ROLES_REQUIRING_BRANCH.includes(editForm.role) && (
-              <div className={FORM_FIELD}>
-                <label className="form-label">Branch</label>
-                <select
-                  className={FORM_SELECT}
-                  value={editForm.branch}
-                  onChange={(e) =>
-                    setEditForm((s) => ({ ...s, branch: e.target.value, shiftIds: [] }))
-                  }
-                  required
-                >
-                  <option value="">Select branch…</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                label="Branch"
+                wrapperClassName={FORM_FIELD}
+                className={FORM_SELECT}
+                value={editForm.branch}
+                onChange={(e) =>
+                  setEditForm((s) => ({ ...s, branch: e.target.value, shiftIds: [] }))
+                }
+                options={branchSelectOptions(branches)}
+                required
+              />
             )}
             {editForm.role === ROLES.EMPLOYEE && (
-              <div className={FORM_FIELD}>
-                <label className="form-label">Employee type</label>
-                <select
-                  className={FORM_SELECT}
-                  value={editForm.employeePosition}
-                  onChange={(e) =>
-                    setEditForm((s) => ({ ...s, employeePosition: e.target.value }))
-                  }
-                >
-                  {EMPLOYEE_POSITIONS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                label="Employee type"
+                wrapperClassName={FORM_FIELD}
+                className={FORM_SELECT}
+                value={editForm.employeePosition}
+                onChange={(e) =>
+                  setEditForm((s) => ({ ...s, employeePosition: e.target.value }))
+                }
+                options={EMPLOYEE_POSITIONS.map((p) => ({ value: p.value, label: p.label }))}
+              />
             )}
             {ROLES_WITH_SHIFTS.includes(editForm.role) && editForm.branch && (
               <div className={`${FORM_FIELD} col-span-full`}>

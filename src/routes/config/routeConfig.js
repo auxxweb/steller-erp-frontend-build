@@ -5,7 +5,6 @@ export const ROLE_BASE_PATHS = {
   [ROLES.SUPER_ADMIN]: '/admin',
   [ROLES.BRANCH_ADMIN]: '/branch',
   [ROLES.EMPLOYEE]: '/employee',
-  [ROLES.DELIVERY_STAFF]: '/delivery',
 };
 
 /** Default landing route segment per role (under base path) */
@@ -16,7 +15,6 @@ export const ROLE_ROUTE_ACCESS = {
   [ROLES.SUPER_ADMIN]: ['/admin'],
   [ROLES.BRANCH_ADMIN]: ['/branch'],
   [ROLES.EMPLOYEE]: ['/employee'],
-  [ROLES.DELIVERY_STAFF]: ['/delivery'],
 };
 
 /** Navigation items per role workspace */
@@ -32,9 +30,8 @@ export const ROLE_NAV_ITEMS = {
     { to: '/admin/categories', label: 'Categories', icon: 'categories' },
     { to: '/admin/customers', label: 'Customers', icon: 'customers' },
     { to: '/admin/combos', label: 'Combos', icon: 'combos' },
-    { to: '/admin/invoices', label: 'Invoices', icon: 'invoices' },
+    { to: '/admin/invoices', label: 'Bills', icon: 'invoices' },
     { to: '/admin/reports', label: 'Reports', icon: 'reports' },
-    { to: '/admin/transfers', label: 'Transfers', icon: 'transfers' },
     { to: '/admin/settings', label: 'Settings', icon: 'settings' },
   ],
   [ROLES.BRANCH_ADMIN]: [
@@ -46,27 +43,17 @@ export const ROLE_NAV_ITEMS = {
     { to: '/branch/categories', label: 'Categories', icon: 'categories' },
     { to: '/branch/customers', label: 'Customers', icon: 'customers' },
     { to: '/branch/combos', label: 'Combos', icon: 'combos' },
-    { to: '/branch/transfers', label: 'Transfers', icon: 'transfers' },
-    { to: '/branch/invoices', label: 'Invoices', icon: 'invoices' },
+    { to: '/branch/invoices', label: 'Bills', icon: 'invoices' },
     { to: '/branch/reports', label: 'Reports', icon: 'reports' },
     { to: '/branch/attendance', label: 'Attendance', icon: 'attendance' },
     { to: '/branch/settings', label: 'Settings', icon: 'settings' },
   ],
   [ROLES.EMPLOYEE]: [
     { to: '/employee/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' },
-    { to: '/employee/rentals', label: 'My jobs', icon: 'rentals' },
-    { to: '/employee/invoices', label: 'My invoices', icon: 'invoices' },
+    { to: '/employee/rentals', label: 'Rentals', icon: 'rentals' },
+    { to: '/employee/invoices', label: 'Bills', icon: 'invoices' },
     { to: '/employee/attendance', label: 'Attendance', icon: 'attendance' },
     { to: '/employee/settings', label: 'Settings', icon: 'settings' },
-  ],
-  [ROLES.DELIVERY_STAFF]: [
-    { to: '/delivery/dashboard', label: 'Dashboard', end: true, icon: 'dashboard' },
-    { to: '/delivery/transfers', label: 'Transfers', icon: 'transfers' },
-    { to: '/delivery/rentals/pickup', label: 'Prebook pickup', icon: 'rentals' },
-    { to: '/delivery/rentals/return', label: 'Return', icon: 'rentals' },
-    { to: '/delivery/assignments', label: 'Assignments', icon: 'assignments' },
-    { to: '/delivery/routes', label: 'Routes', icon: 'routes' },
-    { to: '/delivery/settings', label: 'Settings', icon: 'settings' },
   ],
 };
 

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Input from '../ui/Input.jsx';
+import RiskBadge from '../customers/RiskBadge.jsx';
 import { fetchCustomer, fetchCustomers } from '../../services/customerService.js';
+import { formatCurrency } from '../../utils/format.js';
 
 const MODES = {
   EXISTING: 'existing',
@@ -49,11 +51,6 @@ function RentalCustomerPicker({
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (!branchId || disabled) {
-      setResults([]);
-      return undefined;
-    }
-
     if (!search.trim()) {
       setResults([]);
       setSearching(false);
@@ -65,7 +62,7 @@ function RentalCustomerPicker({
       try {
         const { data } = await fetchCustomers({
           search: search.trim(),
-          branch: branchId,
+          branch: branchId || undefined,
           limit: 20,
           status: 'active',
         });
@@ -105,14 +102,13 @@ function RentalCustomerPicker({
   const prevBranchRef = useRef(branchId);
   useEffect(() => {
     if (prevBranchRef.current !== branchId) {
-      prevBranchRef.current = branchId;
       onChange?.('');
       setSelected(null);
       setSearch('');
       setResults([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchId]);
+    prevBranchRef.current = branchId;
+  }, [branchId, onChange]);
 
   const pickCustomer = (customer) => {
     setSelected(customer);
@@ -135,7 +131,7 @@ function RentalCustomerPicker({
   if (disabled) {
     return (
       <p className="text-sm text-stellar-text-muted">
-        Select a branch first to choose or add a customer.
+        Select a rental branch first to continue.
       </p>
     );
   }
@@ -171,12 +167,41 @@ function RentalCustomerPicker({
         <div className="relative">
           {selected ? (
             <div className="flex items-start justify-between gap-stellar-3 rounded-lg border border-stellar-border bg-stellar-surface-muted/50 p-stellar-3">
-              <div className="min-w-0">
-                <p className="font-medium text-stellar-text">{selected.name}</p>
-                <p className="text-sm text-stellar-text-muted">{selected.phone}</p>
-                {selected.email && (
-                  <p className="text-xs text-stellar-text-muted">{selected.email}</p>
-                )}
+              <div className="min-w-0 space-y-stellar-2">
+                <div>
+                  <p className="font-medium text-stellar-text">{selected.name}</p>
+                  <p className="text-sm text-stellar-text-muted">{selected.phone}</p>
+                  {selected.email && (
+                    <p className="text-xs text-stellar-text-muted">{selected.email}</p>
+                  )}
+                </div>
+                <dl className="grid gap-stellar-2 sm:grid-cols-2 text-sm">
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-stellar-text-muted">
+                      Risk percentage
+                    </dt>
+                    <dd className="mt-0.5 flex flex-wrap items-center gap-stellar-2">
+                      <span className="font-semibold tabular-nums text-stellar-text">
+                        {Math.max(0, Math.min(100, Number(selected.riskScore) || 0))}%
+                      </span>
+                      {selected.riskLevel && <RiskBadge level={selected.riskLevel} />}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-stellar-text-muted">
+                      Previous due
+                    </dt>
+                    <dd
+                      className={`mt-0.5 font-semibold tabular-nums ${
+                        (selected.outstandingBalance ?? 0) > 0
+                          ? 'text-amber-700'
+                          : 'text-stellar-text'
+                      }`}
+                    >
+                      {formatCurrency(selected.outstandingBalance ?? 0)}
+                    </dd>
+                  </div>
+                </dl>
               </div>
               <button
                 type="button"

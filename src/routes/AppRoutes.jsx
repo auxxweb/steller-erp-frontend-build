@@ -13,7 +13,6 @@ import {
   superAdminRoutes,
   branchAdminRoutes,
   employeeRoutes,
-  deliveryRoutes,
 } from './roleRouteTrees.jsx';
 
 function AppRoutes() {
@@ -31,7 +30,6 @@ function AppRoutes() {
         {superAdminRoutes}
         {branchAdminRoutes}
         {employeeRoutes}
-        {deliveryRoutes}
       </Route>
 
       {/* Auth (guest only) */}

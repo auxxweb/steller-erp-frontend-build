@@ -97,7 +97,7 @@ function QrScanPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">QR scan</h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-          Scan unit labels for pickup, return, transfer, or maintenance.
+          Scan unit labels for pickup, return, or maintenance.
         </p>
       </div>
             <div className="flex gap-stellar-2 rounded-full bg-stellar-surface-muted p-1">
@@ -164,7 +164,7 @@ function QrScanPage() {
               className="input"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Rental ref, transfer note…"
+              placeholder="Rental ref, maintenance note…"
             />
           </div>
 

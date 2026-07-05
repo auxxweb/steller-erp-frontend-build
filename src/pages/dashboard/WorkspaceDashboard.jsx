@@ -4,6 +4,8 @@ import DashboardTabs from '../../components/dashboard/DashboardTabs.jsx';
 import QuickActionsGrid from '../../components/dashboard/QuickActionsGrid.jsx';
 import ActivityFeed from '../../components/dashboard/ActivityFeed.jsx';
 import DashboardCharts from '../../components/dashboard/DashboardCharts.jsx';
+import AttendancePunchPanel from '../../components/attendance/AttendancePunchPanel.jsx';
+import { KPI_CARD_STYLES } from '../../components/dashboard/charts/chartColors.js';
 import useAuth from '../../hooks/useAuth.js';
 import { fetchWorkspaceDashboard } from '../../services/dashboardService.js';
 import {
@@ -15,6 +17,7 @@ import { ROLE_LABELS, ROLES } from '../../utils/constants.js';
 import { formatCurrency } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
+import { cn } from '../../utils/cn.js';
 
 function formatKpi(kpi) {
   if (kpi.format === 'currency') return formatCurrency(kpi.value);
@@ -35,7 +38,7 @@ function WorkspaceDashboard({ title }) {
   const showSales = Boolean(data?.features?.sales);
   const showInvoices = showSales || Boolean(data?.features?.invoices);
   const splitCharts = role === ROLES.EMPLOYEE;
-  const inlineCharts = role === ROLES.DELIVERY_STAFF;
+  const showPunchPanel = role === ROLES.EMPLOYEE || role === ROLES.BRANCH_ADMIN;
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +64,6 @@ function WorkspaceDashboard({ title }) {
   const activityLink = (item) => {
     if (item.type === 'rental') return `${basePath}/rentals/${item.entityId}`;
     if (item.type === 'invoice' && showInvoices) return `${basePath}/invoices/${item.entityId}`;
-    if (item.type === 'transfer') return `${basePath}/transfers/${item.entityId}`;
     return null;
   };
 
@@ -93,6 +95,8 @@ function WorkspaceDashboard({ title }) {
 
       <DashboardTabs tabs={tabs} active={tab} onChange={setTab} />
 
+      {showPunchPanel && tab === 'overview' && <AttendancePunchPanel />}
+
       {tab === 'overview' && (
         <div className="space-y-stellar-6">
           {loading ? (
@@ -104,20 +108,28 @@ function WorkspaceDashboard({ title }) {
           ) : (
             <>
               <div className="grid gap-stellar-3 sm:grid-cols-2 lg:grid-cols-3">
-                {(data?.kpis || []).map((kpi) => (
-                  <Card key={kpi.id} variant="muted" className="!p-stellar-4">
-                    <p className="text-xs font-medium uppercase tracking-wider text-stellar-text-subtle">
-                      {kpi.label}
-                    </p>
-                    <p className="mt-stellar-1 text-2xl font-semibold tabular-nums">{formatKpi(kpi)}</p>
-                  </Card>
-                ))}
+                {(data?.kpis || []).map((kpi, index) => {
+                  const accent = KPI_CARD_STYLES[index % KPI_CARD_STYLES.length];
+                  return (
+                    <Card
+                      key={kpi.id}
+                      variant="muted"
+                      className={cn('!p-stellar-4 border-l-4', accent.border, accent.bg)}
+                    >
+                      <p className="text-xs font-medium uppercase tracking-wider text-stellar-text-subtle">
+                        {kpi.label}
+                      </p>
+                      <p className={cn('mt-stellar-1 text-2xl font-semibold tabular-nums', accent.value)}>
+                        {formatKpi(kpi)}
+                      </p>
+                    </Card>
+                  );
+                })}
               </div>
 
               <DashboardCharts
                 charts={charts}
                 showSales={showSales}
-                inline={inlineCharts}
                 splitInline={splitCharts}
               />
             </>
@@ -137,8 +149,7 @@ function WorkspaceDashboard({ title }) {
               <Card.Title>Recent activity</Card.Title>
               <Card.Description>
                 Latest rentals
-                {showInvoices ? ', invoices' : ''}
-                {role !== ROLES.EMPLOYEE ? ', and transfers' : ''} in your workspace.
+                {showInvoices ? ' and invoices' : ''} in your workspace.
               </Card.Description>
             </Card.Header>
             <Card.Content>

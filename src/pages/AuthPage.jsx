@@ -298,7 +298,7 @@ function RoleHint() {
       Your dashboard is assigned automatically:{' '}
       <span className="text-stellar-text-muted">
         {ROLE_LABELS[ROLES.SUPER_ADMIN]}, {ROLE_LABELS[ROLES.BRANCH_ADMIN]},{' '}
-        {ROLE_LABELS[ROLES.EMPLOYEE]}, {ROLE_LABELS[ROLES.DELIVERY_STAFF]}
+        {ROLE_LABELS[ROLES.EMPLOYEE]}
       </span>
     </p>
   );

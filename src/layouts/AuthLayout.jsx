@@ -3,7 +3,7 @@ import ThemeToggle from '../components/ui/ThemeToggle.jsx';
 
 function AuthLayout() {
   return (
-    <div className="dashboard-shell relative flex min-h-screen min-h-[100dvh] flex-col items-center justify-center px-stellar-4 py-stellar-10">
+    <div className="dashboard-shell relative flex min-h-[100dvh] flex-col items-center justify-center px-stellar-4 py-stellar-8 safe-area-bottom safe-area-x">
       {/* Ambient cinematic gradient */}
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -13,7 +13,7 @@ function AuthLayout() {
         <div className="absolute -right-1/4 bottom-0 h-[40vh] w-[40vw] rounded-full bg-stellar-silver/15 blur-3xl dark:bg-stellar-charcoal/40" />
       </div>
 
-      <div className="absolute right-stellar-4 top-stellar-4 z-10 sm:right-stellar-6 sm:top-stellar-6">
+      <div className="absolute right-stellar-4 top-[max(1rem,env(safe-area-inset-top))] z-10 sm:right-stellar-6">
         <ThemeToggle />
       </div>
 

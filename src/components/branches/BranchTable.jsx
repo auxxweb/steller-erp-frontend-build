@@ -38,8 +38,9 @@ function BranchTable({
   }
 
   return (
-    <div className="data-table-wrap overflow-x-auto">
-      <table className="data-table">
+    <>
+      <div className="data-table-wrap data-table-scroll hidden md:block">
+        <table className="data-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -115,7 +116,56 @@ function BranchTable({
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+
+      <ul className="divide-y divide-stellar-border md:hidden">
+        {branches.map((branch) => (
+          <li key={branch.id} className="p-stellar-4">
+            <div className="flex items-start justify-between gap-stellar-2">
+              <Link
+                to={`${basePath}/${branch.id}`}
+                className="font-medium text-stellar-text"
+              >
+                {branch.name}
+              </Link>
+              <BranchStatusBadge status={branch.status} />
+            </div>
+            <p className="mt-stellar-1 font-mono text-xs text-stellar-text-muted">{branch.code}</p>
+            {branch.manager?.name && (
+              <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                Manager: {branch.manager.name}
+              </p>
+            )}
+            {(branch.phone || branch.email) && (
+              <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+                {[branch.phone, branch.email].filter(Boolean).join(' · ')}
+              </p>
+            )}
+            <p className="mt-stellar-1 text-xs text-stellar-text-muted">
+              {formatAddress(branch.address)}
+            </p>
+            <div className="mt-stellar-3 flex flex-wrap gap-stellar-2">
+              <Link to={`${basePath}/${branch.id}`} className="btn btn-ghost btn-sm">
+                View
+              </Link>
+              <Link to={`${basePath}/${branch.id}/edit`} className="btn btn-ghost btn-sm">
+                Edit
+              </Link>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="!text-stellar-danger"
+                  onClick={() => onDelete(branch)}
+                >
+                  Delete
+                </Button>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

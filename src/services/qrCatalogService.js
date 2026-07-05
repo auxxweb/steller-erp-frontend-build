@@ -1,4 +1,5 @@
 import api from './api.js';
+import { UPLOAD_TIMEOUT_MS } from '../config/apiTimeouts.js';
 
 export const fetchQrCatalogUnits = (params) => api.get('/qr-catalog/units', { params });
 
@@ -11,7 +12,7 @@ export const downloadQrCatalogBulkZip = (params) =>
   api.get('/qr-catalog/units/bulk.zip', {
     params,
     responseType: 'blob',
-    timeout: 120000,
+    timeout: UPLOAD_TIMEOUT_MS,
   });
 
 export const triggerBlobDownload = (blob, filename) => {

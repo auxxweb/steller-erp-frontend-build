@@ -1,0 +1,167 @@
+/* ==========================================================================
+   Responsive & PWA — mobile, tablet, desktop
+   ========================================================================== */
+
+/* Safe areas (notch, home indicator) */
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-x {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+
+/* PWA standalone — extra bottom padding for fixed UI */
+@media (display-mode: standalone) {
+  .dashboard-content-inner {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+
+  .pwa-fixed-bottom {
+    bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* iOS: prevent auto-zoom on input focus (requires ≥16px) */
+@media (max-width: 767px) {
+  .input,
+  .textarea,
+  select.input,
+  input[type='search'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='password'],
+  input[type='number'],
+  input[type='datetime-local'],
+  input[type='date'] {
+    font-size: 16px;
+  }
+}
+
+/* Touch-friendly controls on coarse pointers */
+@media (pointer: coarse) {
+  .btn-sm {
+    min-height: 2.75rem;
+    padding-inline: 0.875rem;
+  }
+
+  .btn-icon {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .sidebar-nav-link {
+    min-height: 3rem;
+  }
+}
+
+/* Smooth horizontal scroll for wide tables (tablet fallback) */
+.data-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+/* Page titles scale on small screens */
+.page-title {
+  font-size: clamp(1.25rem, 4vw + 0.5rem, 1.5rem);
+  line-height: 1.25;
+}
+
+.page-subtitle {
+  font-size: clamp(0.8125rem, 2.5vw + 0.25rem, 0.875rem);
+}
+
+/* Horizontal nav tabs — swipe on mobile */
+.nav-scroll {
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-scroll > * {
+  scroll-snap-align: start;
+}
+
+/* Page header: stack actions on narrow screens */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .page-header__actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+}
+
+/* Full-width primary actions on mobile */
+@media (max-width: 639px) {
+  .page-header__actions .btn-primary,
+  .page-header__actions a.btn-primary {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+/* Card list rows (mobile table alternative) */
+.mobile-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-card-list > li {
+  border-bottom: 1px solid var(--stellar-border);
+  padding: 1rem;
+}
+
+.mobile-card-list > li:last-child {
+  border-bottom: none;
+}
+
+/* Form grids — single column on phone */
+.form-grid-responsive {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .form-grid-responsive {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .form-grid-responsive--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Reduce motion preference already in global.css — extend to transforms */
+@media (prefers-reduced-motion: reduce) {
+  .nav-scroll {
+    scroll-behavior: auto;
+  }
+}
