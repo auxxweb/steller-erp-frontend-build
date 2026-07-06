@@ -1,0 +1,1 @@
+import{t as e}from"./api-Ct1BQt_W.js";var t=(t,{year:n,month:r})=>e.get(`/users/${t}/attendance`,{params:{year:n,month:r}}),n=({year:t,month:n})=>e.get(`/attendance/me`,{params:{year:t,month:n}}),r=t=>e.get(`/attendance/today`,t),i=t=>e.post(`/attendance/punch`,{action:t});export{i,r as n,t as r,n as t};

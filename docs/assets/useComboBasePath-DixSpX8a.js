@@ -1,0 +1,1 @@
+import{l as e}from"./vendor-react-DlW_TQ7p.js";import{t}from"./constants-DRDDxfqf.js";import{g as n}from"./index-Ci6swRIA.js";function r(){let{pathname:t}=e();return t.startsWith(`/branch`)?`/branch/combos`:`/admin/combos`}function i(){let{user:e}=n();return[t.SUPER_ADMIN,t.BRANCH_ADMIN].includes(e?.role)}export{r as n,i as t};

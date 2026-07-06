@@ -1,0 +1,1 @@
+import{l as e}from"./vendor-react-DlW_TQ7p.js";function t(){let{pathname:t}=e();return t.startsWith(`/employee`)?`/employee/invoices`:t.startsWith(`/branch`)?`/branch/invoices`:`/admin/invoices`}export{t};
