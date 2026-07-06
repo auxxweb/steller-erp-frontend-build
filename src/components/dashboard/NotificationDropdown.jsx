@@ -41,13 +41,13 @@ function NotificationDropdown() {
   }, []);
 
   useEffect(() => {
-    loadNotifications();
+    loadNotifications({ silent: true });
     const interval = setInterval(() => loadNotifications({ silent: true }), 60000);
     return () => clearInterval(interval);
   }, [loadNotifications]);
 
   useEffect(() => {
-    if (open) loadNotifications();
+    if (open) loadNotifications({ silent: true });
   }, [open, loadNotifications]);
 
   useEffect(() => {

@@ -19,17 +19,17 @@ function InvoiceDocumentPreview({ invoice }) {
         />
       </div>
 
-      <div className="mt-4 flex justify-between gap-4 border-b border-stellar-border pb-4">
-        <div>
+      <div className="mt-4 flex flex-col gap-4 border-b border-stellar-border pb-4 sm:flex-row sm:justify-between">
+        <div className="min-w-0">
           <p className="text-lg font-bold text-stellar-text">{biz.name || 'Stellar Rentals'}</p>
-          <p className="text-xs text-stellar-text-muted">{biz.address}</p>
-          <p className="text-xs text-stellar-text-muted">
+          <p className="break-words text-xs text-stellar-text-muted">{biz.address}</p>
+          <p className="break-words text-xs text-stellar-text-muted">
             {biz.phone}
             {biz.email ? ` · ${biz.email}` : ''}
           </p>
           {biz.gstin ? <p className="text-xs text-stellar-text-muted">GSTIN: {biz.gstin}</p> : null}
         </div>
-        <div className="text-right">
+        <div className="shrink-0 sm:text-right">
           <p className="text-xs font-semibold uppercase tracking-wide text-stellar-accent">Invoice</p>
           <p className="font-mono text-lg font-semibold text-stellar-text">{invoice.invoiceNumber}</p>
           <p className="text-xs text-stellar-text-muted">{formatDate(invoice.issueDate)}</p>
@@ -61,7 +61,8 @@ function InvoiceDocumentPreview({ invoice }) {
         ) : null}
       </div>
 
-      <table className="mt-4 w-full text-xs">
+      <div className="data-table-scroll mt-4">
+      <table className="data-table w-full text-xs">
         <thead>
           <tr className="border-b border-stellar-border text-left text-stellar-text-muted">
             <th className="py-2">Item</th>
@@ -79,6 +80,7 @@ function InvoiceDocumentPreview({ invoice }) {
           ))}
         </tbody>
       </table>
+      </div>
 
       <dl className="mt-4 ml-auto max-w-xs space-y-1 text-xs">
         <div className="flex justify-between">

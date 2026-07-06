@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../../components/dashboard/Sidebar.jsx';
 import DashboardNavbar from '../../components/dashboard/DashboardNavbar.jsx';
 import MobileDrawer from '../../components/dashboard/MobileDrawer.jsx';
+import PageLoadingFallback from '../../components/ui/PageLoadingFallback.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import useUiStore from '../../store/uiStore.js';
 import { ROLE_NAV_ITEMS } from '../../routes/config/routeConfig.js';
@@ -58,15 +59,13 @@ function DashboardShell({ role }) {
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <DashboardNavbar
-          workspace={workspace}
-          basePath={basePath}
-          profilePath={profilePath}
-        />
+        <DashboardNavbar workspace={workspace} profilePath={profilePath} />
 
         <main className="dashboard-content scrollbar-stellar flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
           <div className="dashboard-content-inner mx-auto w-full max-w-dashboard p-stellar-4 safe-area-bottom sm:p-stellar-6 lg:p-stellar-8">
-            <Outlet context={{ role, workspace, user }} />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Outlet context={{ role, workspace, user }} />
+            </Suspense>
           </div>
         </main>
       </div>

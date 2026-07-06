@@ -5,6 +5,7 @@ import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
 import { fetchBranchTeam, fetchBranchTeamMember } from '../../services/teamService.js';
+import AdminUserPasswordPanel from '../../components/admin/AdminUserPasswordPanel.jsx';
 import { ROLE_LABELS } from '../../utils/constants.js';
 import { formatDate, titleCase } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
@@ -300,7 +301,7 @@ function MemberDetail({ memberId, listMember, onClose }) {
         )}
       </div>
 
-      <div className="flex gap-stellar-1 border-b border-stellar-border px-stellar-4">
+      <div className="flex gap-stellar-1 overflow-x-auto border-b border-stellar-border px-stellar-4 nav-scroll">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -374,6 +375,9 @@ function MemberDetail({ memberId, listMember, onClose }) {
                 </dd>
               </div>
             )}
+            <div className="sm:col-span-2">
+              <AdminUserPasswordPanel userId={member.id} userLabel={member.name} />
+            </div>
           </dl>
         )}
         {tab === 'work' && <WorksPanel works={detail?.works} />}
@@ -398,7 +402,6 @@ function BranchTeamPage() {
     setLoading(true);
     try {
       const { data } = await fetchBranchTeam({
-        search: search || undefined,
         role: roleFilter || undefined,
         accountStatus: 'active',
         ...dateParams,
@@ -407,7 +410,7 @@ function BranchTeamPage() {
       setSummary(data.data.summary);
       setSelectedId((prev) => {
         if (prev && data.data.members.some((m) => m.id === prev)) return prev;
-        return data.data.members[0]?.id || null;
+        return null;
       });
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Failed to load team'));
@@ -416,7 +419,7 @@ function BranchTeamPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter, dateParams]);
+  }, [roleFilter, dateParams]);
 
   useEffect(() => {
     loadTeam();
@@ -430,7 +433,7 @@ function BranchTeamPage() {
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Team</h1>
+        <h1 className="page-title font-semibold tracking-tight text-stellar-text">Team</h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
           Branch staff, their onboarded work, and recent activity.
         </p>
@@ -468,7 +471,7 @@ function BranchTeamPage() {
       />
 
       <div className="grid gap-stellar-6 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
+        <Card className={cn('lg:col-span-2', selectedId && 'hidden lg:block')}>
           <Card.Header>
             <Card.Title>Members</Card.Title>
             <Card.Description>
@@ -520,7 +523,7 @@ function BranchTeamPage() {
           </Card.Content>
         </Card>
 
-        <div className="lg:col-span-3">
+        <div className={cn('lg:col-span-3', !selectedId && 'hidden lg:block')}>
           <MemberDetail
             memberId={selectedId}
             listMember={selectedMember}

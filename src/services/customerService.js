@@ -53,5 +53,22 @@ export const fetchGuarantors = (customerId) =>
 export const createGuarantor = (customerId, payload) =>
   api.post(`/customers/${customerId}/guarantors`, payload);
 
+export const updateGuarantor = (customerId, guarantorId, payload) =>
+  api.patch(`/customers/${customerId}/guarantors/${guarantorId}`, payload);
+
 export const deleteGuarantor = (customerId, guarantorId) =>
   api.delete(`/customers/${customerId}/guarantors/${guarantorId}`);
+
+export const uploadGuarantorDocuments = (customerId, guarantorId, files, meta = {}) =>
+  api.post(
+    `/customers/${customerId}/guarantors/${guarantorId}/documents/upload`,
+    buildUploadFormData(files, {
+      fieldName: 'documents',
+      meta: {
+        type: meta.type,
+        number: meta.number,
+        name: meta.name,
+      },
+    }),
+    multipartConfig,
+  );

@@ -55,7 +55,6 @@ function ProductListPage() {
         limit: 10,
         status: statusFilter || undefined,
         category: categoryFilter || undefined,
-        search: search.trim() || undefined,
         ...dateParams,
       });
       setProducts(data.data.products);
@@ -65,7 +64,7 @@ function ProductListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, categoryFilter, search]);
+  }, [page, dateParams, statusFilter, categoryFilter]);
 
   useEffect(() => {
     loadProducts();

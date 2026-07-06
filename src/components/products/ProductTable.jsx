@@ -51,6 +51,10 @@ function ProductTable({ products, loading, basePath, canManage, onDelete }) {
                       <img
                         src={product.images[0]}
                         alt=""
+                        width={40}
+                        height={40}
+                        loading="lazy"
+                        decoding="async"
                         className="h-10 w-10 rounded-stellar-md border border-stellar-border object-cover"
                       />
                     ) : (

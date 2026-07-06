@@ -89,7 +89,7 @@ function CustomerProfilePage() {
             <div className="grid gap-stellar-6 lg:grid-cols-2">
               <Card variant="muted" className="!p-stellar-5">
                 <h2 className="text-sm font-semibold text-stellar-text">Contact</h2>
-                <dl className="mt-stellar-4 space-y-stellar-3 text-sm">
+                <dl className="mt-stellar-4 space-y-stellar-3 text-sm [&_dd]:min-w-0 [&_dd]:break-words [&>div]:flex [&>div]:flex-col [&>div]:gap-stellar-1 sm:[&>div]:flex-row sm:[&>div]:justify-between sm:[&>div]:gap-stellar-4">
                   <div className="flex justify-between gap-stellar-4">
                     <dt className="text-stellar-text-muted">Type</dt>
                     <dd className="capitalize">{customer.customerType}</dd>
@@ -104,8 +104,8 @@ function CustomerProfilePage() {
                       <dd className="tabular-nums">{customer.alternatePhone}</dd>
                     </div>
                   )}
-                  <div className="flex justify-between gap-stellar-4">
-                    <dt className="text-stellar-text-muted">Email</dt>
+                  <div className="flex flex-col gap-stellar-1 sm:flex-row sm:justify-between sm:gap-stellar-4">
+                    <dt className="shrink-0 text-stellar-text-muted">Email</dt>
                     <dd>{customer.email || '—'}</dd>
                   </div>
                   {customer.customerType === CUSTOMER_TYPE.BUSINESS && (
@@ -125,7 +125,7 @@ function CustomerProfilePage() {
 
               <Card variant="muted" className="!p-stellar-5">
                 <h2 className="text-sm font-semibold text-stellar-text">Credit & balance</h2>
-                <dl className="mt-stellar-4 space-y-stellar-3 text-sm">
+                <dl className="mt-stellar-4 space-y-stellar-3 text-sm [&_dd]:min-w-0 [&_dd]:break-words [&>div]:flex [&>div]:flex-col [&>div]:gap-stellar-1 sm:[&>div]:flex-row sm:[&>div]:justify-between sm:[&>div]:gap-stellar-4">
                   <div className="flex justify-between gap-stellar-4">
                     <dt className="text-stellar-text-muted">Credit limit</dt>
                     <dd className="font-medium tabular-nums">{formatMoney(customer.creditLimit)}</dd>

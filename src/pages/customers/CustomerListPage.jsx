@@ -56,7 +56,6 @@ function CustomerListPage() {
         status: statusFilter || undefined,
         customerType: typeFilter || undefined,
         riskLevel: riskFilter || undefined,
-        search: search.trim() || undefined,
         ...dateParams,
       });
       setCustomers(data.data.customers);
@@ -66,7 +65,7 @@ function CustomerListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, typeFilter, riskFilter, search]);
+  }, [page, dateParams, statusFilter, typeFilter, riskFilter]);
 
   useEffect(() => {
     loadCustomers();

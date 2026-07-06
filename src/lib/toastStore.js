@@ -7,6 +7,7 @@ let seq = 0;
 /** @type {Array<{ id: string, message: string, variant: 'success' | 'error' | 'info' }>} */
 let items = [];
 const listeners = new Set();
+let lastPush = { message: '', variant: '', at: 0, id: null };
 
 function emit() {
   listeners.forEach((fn) => fn());
@@ -34,8 +35,18 @@ export function dismissToast(id) {
  */
 export function pushToast(message, options = {}) {
   if (!message?.trim()) return null;
-  const id = `toast-${++seq}`;
+  const trimmed = message.trim();
   const variant = options.variant || 'info';
+  const now = Date.now();
+
+  if (
+    lastPush.message === trimmed &&
+    lastPush.variant === variant &&
+    now - lastPush.at < 500
+  ) {
+    return lastPush.id;
+  }
+
   const duration =
     options.duration !== undefined
       ? options.duration
@@ -43,7 +54,9 @@ export function pushToast(message, options = {}) {
         ? 8000
         : 5000;
 
-  items = [...items, { id, message: message.trim(), variant }];
+  const id = `toast-${++seq}`;
+  items = [{ id, message: trimmed, variant }];
+  lastPush = { message: trimmed, variant, at: now, id };
   emit();
 
   if (duration > 0) {

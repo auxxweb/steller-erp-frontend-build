@@ -36,7 +36,6 @@ function RentalActivePage() {
         limit: 10,
         sortBy: 'scheduledEndAt',
         sortOrder: 'asc',
-        search: search.trim() || undefined,
       };
       if (statusFilter) {
         params.status = statusFilter;
@@ -52,7 +51,7 @@ function RentalActivePage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, dateParams, search]);
+  }, [page, statusFilter, dateParams]);
 
   useEffect(() => {
     load();

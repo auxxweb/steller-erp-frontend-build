@@ -1,10 +1,9 @@
 import ThemeToggle from '../ui/ThemeToggle.jsx';
-import Breadcrumbs from './Breadcrumbs.jsx';
 import NotificationDropdown from './NotificationDropdown.jsx';
 import ProfileDropdown from './ProfileDropdown.jsx';
 import useUiStore from '../../store/uiStore.js';
 
-function DashboardNavbar({ workspace, basePath, profilePath }) {
+function DashboardNavbar({ workspace, profilePath }) {
   const openMobileDrawer = useUiStore((s) => s.openMobileDrawer);
 
   return (
@@ -21,9 +20,10 @@ function DashboardNavbar({ workspace, basePath, profilePath }) {
           </svg>
         </button>
 
-        <div className="min-w-0 flex-1">
-          <Breadcrumbs basePath={basePath} workspaceTitle={workspace.title} />
+        <div className="min-w-0 flex-1 lg:hidden">
+          <p className="truncate text-sm font-semibold text-stellar-text">{workspace.title}</p>
         </div>
+        <div className="hidden flex-1 lg:block" aria-hidden />
 
         <div className="flex shrink-0 items-center gap-stellar-1 sm:gap-stellar-2">
           <ThemeToggle />

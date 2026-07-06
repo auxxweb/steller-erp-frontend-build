@@ -51,7 +51,6 @@ function CategoryListPage() {
         page,
         limit: 10,
         status: statusFilter || undefined,
-        search: search.trim() || undefined,
         ...dateParams,
       });
       setCategories(data.data.categories);
@@ -61,7 +60,7 @@ function CategoryListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, search]);
+  }, [page, dateParams, statusFilter]);
 
   useEffect(() => {
     if (location.state?.message) {

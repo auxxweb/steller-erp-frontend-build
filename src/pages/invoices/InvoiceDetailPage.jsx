@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -18,10 +18,10 @@ import {
 } from '../../services/invoiceService.js';
 import {
   INVOICE_PAYMENT_TYPE,
-  INVOICE_PAYMENT_LABELS,
+  INVOICE_PAYMENT_OPTIONS,
   INVOICE_STATUS_LABELS,
 } from '../../utils/invoiceConstants.js';
-import { ROLES } from '../../utils/constants.js';
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from '../../utils/rentalConstants.js';
 import { mergeInvoiceAmounts, hasInvoiceRecordedPayments } from '../../utils/invoiceCalculations.js';
 import {
   canEditInvoiceBillAmount,
@@ -51,6 +51,17 @@ function buildUpdatePayload(invoice, { includeBillAmount = false } = {}) {
   };
 }
 
+function defaultPaymentForm(balanceDue = 0) {
+  return {
+    amount: balanceDue > 0 ? balanceDue : '',
+    cashAmount: '',
+    onlineAmount: '',
+    method: INVOICE_PAYMENT_TYPE.CASH,
+    paidAt: toDatetimeLocalValue(new Date()),
+    notes: '',
+  };
+}
+
 function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -63,17 +74,7 @@ function InvoiceDetailPage() {
   const [printing, setPrinting] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [recordingPayment, setRecordingPayment] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    method: INVOICE_PAYMENT_TYPE.CASH,
-    paidAt: new Date().toISOString().slice(0, 10),
-    notes: '',
-  });
-
-  const canEditClosed =
-    user?.role === ROLES.SUPER_ADMIN ||
-    user?.role === ROLES.BRANCH_ADMIN ||
-    user?.role === ROLES.EMPLOYEE;
+  const [paymentForm, setPaymentForm] = useState(() => defaultPaymentForm());
 
   const canEditBillAmountRole = canEditInvoiceBillAmount(user);
   const hasRecordedPayments = hasInvoiceRecordedPayments(invoice);
@@ -84,12 +85,39 @@ function InvoiceDetailPage() {
     () => lineItemsSubtotal(invoice?.lineItems),
     [invoice?.lineItems],
   );
+  const billAmount = amounts?.subtotal ?? 0;
+  const hasBillAmount = billAmount > 0;
 
-  const editable = invoice && (!invoice.isLocked || canEditClosed);
+  const editable = invoice && !invoice.isLocked;
   const balanceDue = amounts?.balanceDue ?? 0;
-  const canRecordPayment =
-    invoice && invoice.status !== 'void' && balanceDue > 0;
-  const showBillCard = editable || canRecordPayment;
+  const showRecordPayment = Boolean(invoice && invoice.status !== 'void');
+  const canSubmitPayment = balanceDue > 0;
+  const canCloseJob = Boolean(editable && hasBillAmount && balanceDue <= 0);
+  const isSplitPayment = paymentForm.method === INVOICE_PAYMENT_TYPE.SPLIT;
+
+  const resetPaymentForm = useCallback((due = 0) => {
+    setPaymentForm(defaultPaymentForm(due));
+  }, []);
+
+  const paymentFormInitRef = useRef(null);
+  useEffect(() => {
+    if (loading || !invoice) return;
+    if (paymentFormInitRef.current === invoice.id) return;
+    paymentFormInitRef.current = invoice.id;
+    setPaymentForm(defaultPaymentForm(balanceDue));
+  }, [loading, invoice, balanceDue]);
+
+  const saveInvoiceBeforePayment = async () => {
+    if (!editable || !invoice || invoice.isLocked) return invoice;
+    const { data } = await updateInvoice(
+      id,
+      buildUpdatePayload(invoice, { includeBillAmount: canEditBillAmount }),
+    );
+    const inv = data.data.invoice;
+    const next = { ...inv, amounts: mergeInvoiceAmounts(inv) };
+    setInvoice(next);
+    return next;
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,6 +136,29 @@ function InvoiceDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    paymentFormInitRef.current = null;
+  }, [id]);
+
+  useEffect(() => {
+    if (loading || !invoice || isSplitPayment || balanceDue <= 0) return;
+    setPaymentForm((prev) => ({
+      ...prev,
+      amount: balanceDue,
+    }));
+  }, [
+    balanceDue,
+    loading,
+    invoice,
+    isSplitPayment,
+    amounts?.discount,
+    amounts?.lateFee,
+    amounts?.damageFee,
+    amounts?.advanceAmount,
+    amounts?.gstEnabled,
+    amounts?.gstRate,
+  ]);
 
   const patch = (partial) => {
     setInvoice((prev) => {
@@ -163,10 +214,17 @@ function InvoiceDetailPage() {
   };
 
   const handleCloseJob = async () => {
-    const msg = canEditClosed
-      ? 'Close this job? The invoice will be marked closed. You can still edit it afterward.'
-      : 'Close this job? The invoice will be locked.';
-    if (!window.confirm(msg)) {
+    if (!hasBillAmount) {
+      toast.error('Enter the bill amount before closing this job');
+      return;
+    }
+    if (balanceDue > 0) {
+      toast.error(
+        `Record the due amount (${formatCurrency(balanceDue)}) before closing this job`,
+      );
+      return;
+    }
+    if (!window.confirm('Close this job? The invoice will be locked and cannot be edited afterward.')) {
       return;
     }
     setClosing(true);
@@ -221,26 +279,82 @@ function InvoiceDetailPage() {
   };
 
   const handleRecordPayment = async (e) => {
-    e.preventDefault();
-    const amount = Number(paymentForm.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error('Enter a valid payment amount');
-      return;
-    }
+    e?.preventDefault?.();
     setRecordingPayment(true);
     try {
+      const saved = await saveInvoiceBeforePayment();
+      const due = saved?.amounts?.balanceDue ?? balanceDue;
+      if (due <= 0) {
+        toast.error('No balance due on this bill after saving');
+        return;
+      }
+
+      const paidAt =
+        fromDatetimeLocalValue(paymentForm.paidAt) || new Date().toISOString();
+      const notes = paymentForm.notes.trim() || undefined;
+
+      if (isSplitPayment) {
+        const cash = Math.max(0, Number(paymentForm.cashAmount) || 0);
+        const online = Math.max(0, Number(paymentForm.onlineAmount) || 0);
+        const total = cash + online;
+        if (total <= 0) {
+          toast.error('Enter cash and/or online amounts');
+          return;
+        }
+        if (total > due + 0.01) {
+          toast.error(`Payment exceeds balance due (${formatCurrency(due)})`);
+          return;
+        }
+        let inv;
+        if (cash > 0) {
+          const { data } = await recordInvoicePayment(id, {
+            amount: cash,
+            method: INVOICE_PAYMENT_TYPE.CASH,
+            paidAt,
+            notes,
+          });
+          inv = data.data.invoice;
+        }
+        if (online > 0) {
+          const { data } = await recordInvoicePayment(id, {
+            amount: online,
+            method: INVOICE_PAYMENT_TYPE.ONLINE,
+            paidAt,
+            notes,
+          });
+          inv = data.data.invoice;
+        }
+        setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
+        const nextDue = mergeInvoiceAmounts(inv)?.balanceDue ?? 0;
+        resetPaymentForm(nextDue);
+        toast.success('Payment recorded');
+        return inv;
+      }
+
+      const amount = Number(paymentForm.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        toast.error('Enter a valid payment amount');
+        return;
+      }
+      if (amount > due + 0.01) {
+        toast.error(`Payment exceeds balance due (${formatCurrency(due)})`);
+        return;
+      }
       const { data } = await recordInvoicePayment(id, {
         amount,
         method: paymentForm.method,
-        paidAt: paymentForm.paidAt,
-        notes: paymentForm.notes.trim() || undefined,
+        paidAt,
+        notes,
       });
       const inv = data.data.invoice;
       setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
-      setPaymentForm((prev) => ({ ...prev, amount: '', notes: '' }));
+      const nextDue = mergeInvoiceAmounts(inv)?.balanceDue ?? 0;
+      resetPaymentForm(nextDue);
       toast.success('Payment recorded');
+      return inv;
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not record payment'));
+      return null;
     } finally {
       setRecordingPayment(false);
     }
@@ -252,26 +366,26 @@ function InvoiceDetailPage() {
 
   return (
     <div className="animate-fade-up opacity-0-start mx-auto max-w-3xl space-y-stellar-6">
-      <div className="flex flex-wrap items-start justify-between gap-stellar-3">
-        <div>
+      <div className="flex flex-col gap-stellar-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <Link to={basePath} className="text-sm text-stellar-text-muted hover:underline">
             ← Bills
           </Link>
-          <h1 className="mt-stellar-1 font-mono text-2xl font-semibold text-stellar-text">
+          <h1 className="mt-stellar-1 font-mono text-xl font-semibold text-stellar-text sm:text-2xl">
             {invoice.invoiceNumber}
           </h1>
-          <p className="text-sm text-stellar-text-muted">
+          <p className="break-words text-sm text-stellar-text-muted">
             {INVOICE_STATUS_LABELS[invoice.status] || invoice.status}
             {invoice.isLocked ? ' · Closed' : ' · Open'}
-            {invoice.isLocked && canEditClosed ? ' · Can edit' : ''}
             {invoice.rental?.rentalNumber && <> · {invoice.rental.rentalNumber}</>}
           </p>
         </div>
-        <div className="flex flex-wrap gap-stellar-2">
+        <div className="flex w-full flex-col gap-stellar-2 sm:w-auto sm:flex-row sm:flex-wrap">
           <Button
             type="button"
             variant="secondary"
             size="sm"
+            className="w-full sm:w-auto"
             disabled={printing}
             onClick={handlePrint}
           >
@@ -281,27 +395,28 @@ function InvoiceDetailPage() {
             type="button"
             variant="secondary"
             size="sm"
+            className="w-full sm:w-auto"
             disabled={downloading}
             onClick={handleDownload}
           >
             {downloading ? 'Downloading…' : 'Download'}
           </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={handleWhatsApp}>
+          <Button type="button" variant="secondary" size="sm" className="w-full sm:w-auto" onClick={handleWhatsApp}>
             Share WhatsApp
           </Button>
-          {editable && !invoice.isLocked && (
+          {canCloseJob && (
             <>
-              <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={handleSave}>
+              <Button type="button" variant="secondary" size="sm" className="w-full sm:w-auto" disabled={saving} onClick={handleSave}>
                 {saving ? 'Saving…' : 'Save'}
               </Button>
-              <Button type="button" size="sm" disabled={closing} onClick={handleCloseJob}>
+              <Button type="button" size="sm" className="w-full sm:w-auto" disabled={closing} onClick={handleCloseJob}>
                 {closing ? 'Closing…' : 'Close job'}
               </Button>
             </>
           )}
-          {editable && invoice.isLocked && canEditClosed && (
-            <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={handleSave}>
-              {saving ? 'Saving…' : 'Save changes'}
+          {editable && !hasBillAmount && (
+            <Button type="button" variant="secondary" size="sm" className="w-full sm:w-auto" disabled={saving} onClick={handleSave}>
+              {saving ? 'Saving…' : 'Save'}
             </Button>
           )}
         </div>
@@ -309,7 +424,7 @@ function InvoiceDetailPage() {
 
       <InvoiceDocumentPreview invoice={{ ...invoice, amounts }} />
 
-      {showBillCard && (
+      {(editable || (showRecordPayment && balanceDue > 0)) && (
         <Card className="!p-stellar-5 space-y-stellar-6">
           {editable && (
             <>
@@ -357,7 +472,7 @@ function InvoiceDetailPage() {
                   <NumberInput
                     min={0}
                     allowDecimal={false}
-                    value={amounts.subtotal ?? 0}
+                    value={billAmount}
                     onChange={(n) => patchAmountField('subtotal', n)}
                   />
                   <p className="mt-1 text-xs text-stellar-text-muted">
@@ -462,7 +577,7 @@ function InvoiceDetailPage() {
             </>
           )}
 
-          {canRecordPayment && (
+          {showRecordPayment && (
             <div className={editable ? 'border-t border-stellar-border pt-stellar-5' : ''}>
               <h2 className="text-sm font-semibold uppercase tracking-wide text-stellar-text-muted">
                 Record payment
@@ -472,52 +587,127 @@ function InvoiceDetailPage() {
                 <span className="font-semibold tabular-nums text-stellar-text">
                   {formatCurrency(balanceDue)}
                 </span>
+                {editable && !invoice.isLocked && (
+                  <span className="mt-1 block text-xs">
+                    Bill changes are saved automatically when you record a payment.
+                  </span>
+                )}
               </p>
-              <form onSubmit={handleRecordPayment} className="mt-stellar-4 grid gap-stellar-3 sm:grid-cols-2">
-                <div>
-                  <label className="form-label">Amount (₹)</label>
-                  <NumberInput
-                    min={1}
-                    max={balanceDue}
-                    allowDecimal={false}
-                    value={paymentForm.amount}
-                    onChange={(n) => setPaymentForm((p) => ({ ...p, amount: n ?? '' }))}
-                    placeholder={`Max ${formatCurrency(balanceDue)}`}
+              {canSubmitPayment ? (
+                <form onSubmit={handleRecordPayment} className="mt-stellar-4 grid gap-stellar-3 sm:grid-cols-2">
+                  {!isSplitPayment ? (
+                    <div>
+                      <label className="form-label">Amount (₹)</label>
+                      <NumberInput
+                        min={0}
+                        max={balanceDue}
+                        allowDecimal={false}
+                        value={paymentForm.amount ?? 0}
+                        onChange={(n) =>
+                          setPaymentForm((p) => ({ ...p, amount: n ?? '' }))
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="form-label">Cash (₹)</label>
+                        <NumberInput
+                          min={0}
+                          max={balanceDue}
+                          allowDecimal={false}
+                          value={
+                            paymentForm.cashAmount === '' || paymentForm.cashAmount === 0
+                              ? 0
+                              : paymentForm.cashAmount
+                          }
+                          onChange={(n) =>
+                            setPaymentForm((p) => ({ ...p, cashAmount: n ?? '' }))
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label">Online (₹)</label>
+                        <NumberInput
+                          min={0}
+                          max={balanceDue}
+                          allowDecimal={false}
+                          value={
+                            paymentForm.onlineAmount === '' || paymentForm.onlineAmount === 0
+                              ? 0
+                              : paymentForm.onlineAmount
+                          }
+                          onChange={(n) =>
+                            setPaymentForm((p) => ({ ...p, onlineAmount: n ?? '' }))
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="form-label">Payment date & time</label>
+                    <input
+                      type="datetime-local"
+                      className="input"
+                      value={paymentForm.paidAt}
+                      onChange={(e) =>
+                        setPaymentForm((p) => ({ ...p, paidAt: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <SearchableSelect
+                    label="Paid via"
+                    value={paymentForm.method}
+                    onChange={(e) =>
+                      setPaymentForm((p) => ({
+                        ...p,
+                        method: e.target.value,
+                        cashAmount: '',
+                        onlineAmount: '',
+                        amount:
+                          e.target.value === INVOICE_PAYMENT_TYPE.SPLIT
+                            ? ''
+                            : balanceDue,
+                      }))
+                    }
+                    options={INVOICE_PAYMENT_OPTIONS}
                   />
+                  <div>
+                    <label className="form-label">Notes</label>
+                    <input
+                      className="input"
+                      value={paymentForm.notes}
+                      onChange={(e) => setPaymentForm((p) => ({ ...p, notes: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button type="submit" size="sm" disabled={recordingPayment || closing}>
+                      {recordingPayment ? 'Recording…' : 'Record payment'}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="mt-stellar-4 space-y-stellar-2">
+                  <p className="text-sm text-stellar-text-muted">
+                    {!hasBillAmount
+                      ? 'Enter the bill amount above before recording payment or closing this job.'
+                      : balanceDue > 0
+                        ? `Balance due: ${formatCurrency(balanceDue)}. Record payment to settle before closing.`
+                        : 'No balance due on this bill.'}
+                    {hasBillAmount && (amounts?.advanceAmount ?? 0) > 0 && balanceDue <= 0 && (
+                      <> Advance paid: {formatCurrency(amounts.advanceAmount)}.</>
+                    )}
+                  </p>
+                  {!invoice.isLocked && canCloseJob && (
+                    <Button type="button" size="sm" disabled={closing} onClick={handleCloseJob}>
+                      {closing ? 'Closing…' : 'Close job'}
+                    </Button>
+                  )}
                 </div>
-                <div>
-                  <label className="form-label">Payment date</label>
-                  <input
-                    type="date"
-                    className="input"
-                    value={paymentForm.paidAt}
-                    onChange={(e) => setPaymentForm((p) => ({ ...p, paidAt: e.target.value }))}
-                  />
-                </div>
-                <SearchableSelect
-                  label="Paid via"
-                  value={paymentForm.method}
-                  onChange={(e) => setPaymentForm((p) => ({ ...p, method: e.target.value }))}
-                  options={[
-                    { value: INVOICE_PAYMENT_TYPE.CASH, label: INVOICE_PAYMENT_LABELS.cash },
-                    { value: INVOICE_PAYMENT_TYPE.ONLINE, label: INVOICE_PAYMENT_LABELS.online },
-                  ]}
-                />
-                <div>
-                  <label className="form-label">Notes</label>
-                  <input
-                    className="input"
-                    value={paymentForm.notes}
-                    onChange={(e) => setPaymentForm((p) => ({ ...p, notes: e.target.value }))}
-                    placeholder="Optional"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Button type="submit" size="sm" disabled={recordingPayment}>
-                    {recordingPayment ? 'Recording…' : 'Record payment'}
-                  </Button>
-                </div>
-              </form>
+              )}
             </div>
           )}
         </Card>

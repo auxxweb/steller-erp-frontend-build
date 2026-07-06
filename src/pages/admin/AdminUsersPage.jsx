@@ -5,6 +5,7 @@ import Input from '../../components/ui/Input.jsx';
 import PasswordInput from '../../components/ui/PasswordInput.jsx';
 import Modal from '../../components/ui/Modal.jsx';
 import UserAttendanceModal from '../../components/admin/UserAttendanceModal.jsx';
+import AdminUserPasswordPanel from '../../components/admin/AdminUserPasswordPanel.jsx';
 import { fetchBranches } from '../../services/branchService.js';
 import { createShift, deleteShift, fetchShifts, updateShift } from '../../services/shiftService.js';
 import {
@@ -13,8 +14,6 @@ import {
   updateUser,
   updateUserStatus,
   deleteUserPermanently,
-  regenerateUserPassword,
-  viewUserPassword,
 } from '../../services/userService.js';
 import useAuth from '../../hooks/useAuth.js';
 import { uploadUserDocuments } from '../../services/uploadService.js';
@@ -621,24 +620,6 @@ function AdminUsersPage() {
       toast.error(formatApiError(e2, 'Delete failed'));
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleRegenerate = async (userId) => {
-    try {
-      const res = await regenerateUserPassword(userId);
-      toast.success(`New password: ${res.data.data.password}`);
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Password regenerate failed');
-    }
-  };
-
-  const handleViewPassword = async (userId) => {
-    try {
-      const res = await viewUserPassword(userId);
-      toast.success(`Current password: ${res.data.data.password}`);
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'View password failed');
     }
   };
 
@@ -1308,17 +1289,12 @@ function AdminUsersPage() {
             )}
           </dl>
         )}
+        {selectedUser && (
+          <div className="mt-stellar-6">
+            <AdminUserPasswordPanel userId={selectedUser.id} userLabel={selectedUser.name} />
+          </div>
+        )}
         <div className="mt-stellar-6 flex flex-wrap justify-end gap-stellar-2">
-          {selectedUser && (
-            <>
-              <Button variant="secondary" size="sm" onClick={() => handleRegenerate(selectedUser.id)}>
-                Regenerate password
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => handleViewPassword(selectedUser.id)}>
-                View password
-              </Button>
-            </>
-          )}
           <Button variant="secondary" onClick={closeModal}>
             Close
           </Button>
@@ -1345,7 +1321,7 @@ function AdminUsersPage() {
               required
             />
             <p className="col-span-full text-sm text-stellar-text-muted md:col-span-1 md:flex md:items-end">
-              Use Regenerate password on the user view to change login password.
+              Use Change password on the user view to reset login password.
             </p>
             <FormSection>Profile</FormSection>
             <Input

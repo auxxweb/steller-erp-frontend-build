@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button.jsx';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import QrSerialImage from '../../components/qr/QrSerialImage.jsx';
+import { buildUnitQrScanPayload } from '../../utils/qrPayload.js';
 import { fetchBranches } from '../../services/branchService.js';
 import {
   fetchQrCatalogUnits,
@@ -40,6 +41,7 @@ async function fetchAllCatalogUnits(params) {
 function QrCodesAdminPage() {
   const [units, setUnits] = useState([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,11 +53,16 @@ function QrCodesAdminPage() {
       .catch(() => setBranches([]));
   }, []);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
   const loadUnits = useCallback(async () => {
     setLoading(true);
     try {
       const list = await fetchAllCatalogUnits({
-        search: search.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         branch: branchFilter || undefined,
       });
       setUnits(list);
@@ -65,7 +72,7 @@ function QrCodesAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, branchFilter]);
+  }, [debouncedSearch, branchFilter]);
 
   useEffect(() => {
     loadUnits();
@@ -79,7 +86,7 @@ function QrCodesAdminPage() {
       const { data } = await downloadQrCatalogBulkZip({
         search: search.trim() || undefined,
         branch: branchFilter || undefined,
-        max: 500,
+        max: Math.max(units.length, 500),
       });
       triggerBlobDownload(data, `product-qr-codes-${new Date().toISOString().slice(0, 10)}.zip`);
       toast.success('Bulk QR ZIP downloaded');
@@ -98,7 +105,7 @@ function QrCodesAdminPage() {
             Product QR codes
           </h1>
           <p className="mt-stellar-2 text-sm leading-relaxed text-stellar-text-muted">
-            QR codes grouped by category and product. Each code encodes the unit serial number.
+            QR codes grouped by category and product. Each code encodes a scannable unit ID.
           </p>
         </div>
         <div className="flex flex-wrap gap-stellar-3 sm:shrink-0">
@@ -163,7 +170,10 @@ function QrCodesAdminPage() {
                           key={unit.id}
                           className="flex flex-col items-center rounded-stellar-lg border border-stellar-border bg-stellar-surface p-stellar-3 text-center"
                         >
-                          <QrSerialImage serialNumber={unit.serialNumber} size={120} />
+                          <QrSerialImage
+                            payload={buildUnitQrScanPayload(unit.id)}
+                            size={120}
+                          />
                           <p className="mt-stellar-2 w-full truncate font-mono text-xs font-medium text-stellar-text">
                             {unit.serialNumber || '—'}
                           </p>

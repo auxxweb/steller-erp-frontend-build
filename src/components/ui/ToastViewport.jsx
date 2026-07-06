@@ -20,7 +20,7 @@ function ToastViewport() {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-4 right-0 z-[10000] flex max-h-[min(80vh,480px)] w-full max-w-md flex-col-reverse gap-2 overflow-y-auto p-4 sm:right-4"
+      className="pointer-events-none fixed top-4 right-0 z-[10000] flex w-full max-w-md flex-col gap-2 overflow-y-auto p-4 sm:right-4"
       aria-live="polite"
       aria-relevant="additions text"
     >

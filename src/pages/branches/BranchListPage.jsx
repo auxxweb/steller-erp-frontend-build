@@ -48,7 +48,6 @@ function BranchListPage() {
         page,
         limit: 10,
         status: statusFilter || undefined,
-        search: search.trim() || undefined,
         ...dateParams,
       });
       setBranches(data.data.branches);
@@ -58,7 +57,7 @@ function BranchListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, search]);
+  }, [page, dateParams, statusFilter]);
 
   useEffect(() => {
     if (location.state?.message) {

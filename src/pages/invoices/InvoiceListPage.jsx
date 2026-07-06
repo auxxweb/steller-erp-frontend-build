@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -39,6 +39,11 @@ function InvoiceListPage() {
     dateParams,
   } = useListFilters();
   const [statusFilter, setStatusFilter] = useState('');
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter, branchFilter }),
+    [dateParams, statusFilter, branchFilter],
+  );
+  const prevFilterKey = useRef(filterKey);
 
   useEffect(() => {
     if (!isSuperAdmin) return;
@@ -54,7 +59,6 @@ function InvoiceListPage() {
         page,
         limit: 15,
         status: statusFilter || undefined,
-        search: search.trim() || undefined,
         branch: branchFilter || undefined,
         ...dateParams,
       };
@@ -67,15 +71,18 @@ function InvoiceListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, search, branchFilter]);
+  }, [page, dateParams, statusFilter, branchFilter]);
 
   useEffect(() => {
+    if (prevFilterKey.current !== filterKey) {
+      prevFilterKey.current = filterKey;
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+    }
     load();
-  }, [load]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [dateParams, statusFilter, branchFilter]);
+  }, [filterKey, page, load]);
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
@@ -161,16 +168,18 @@ function InvoiceListPage() {
                 <tbody className="divide-y divide-stellar-border">
                   {invoices.map((inv) => (
                     <tr key={inv.id} className="hover:bg-stellar-surface-muted/30">
-                      <td className="px-stellar-4 py-stellar-3 font-mono">
-                        <Link
-                          to={`${basePath}/${inv.id}`}
-                          className="font-medium text-stellar-accent hover:underline"
-                        >
-                          {inv.invoiceNumber}
-                        </Link>
-                        {inv.isLocked && (
-                          <span className="ml-2 text-xs text-stellar-text-muted">Closed</span>
-                        )}
+                      <td className="px-stellar-4 py-stellar-3">
+                        <div className="flex flex-col gap-0.5">
+                          <Link
+                            to={`${basePath}/${inv.id}`}
+                            className="font-mono font-medium text-stellar-accent hover:underline"
+                          >
+                            {inv.invoiceNumber}
+                          </Link>
+                          {inv.isLocked && (
+                            <span className="text-xs text-stellar-text-muted">Closed</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-stellar-4 py-stellar-3">
                         {inv.customerSnapshot?.name || inv.customer?.name || '—'}

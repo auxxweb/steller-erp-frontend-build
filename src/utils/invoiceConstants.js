@@ -30,4 +30,9 @@ export const INVOICE_PAYMENT_LABELS = {
   split: 'Cash + Online',
 };
 
+export const INVOICE_PAYMENT_OPTIONS = Object.values(INVOICE_PAYMENT_TYPE).map((value) => ({
+  value,
+  label: INVOICE_PAYMENT_LABELS[value],
+}));
+
 export { DATE_PERIOD_OPTIONS as INVOICE_PERIOD_OPTIONS } from './listConstants.js';

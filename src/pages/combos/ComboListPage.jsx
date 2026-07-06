@@ -46,7 +46,6 @@ function ComboListPage() {
         page,
         limit: 10,
         status: statusFilter || undefined,
-        search: search.trim() || undefined,
         ...dateParams,
       });
       setCombos(data.data.combos);
@@ -56,7 +55,7 @@ function ComboListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateParams, statusFilter, search]);
+  }, [page, dateParams, statusFilter]);
 
   useEffect(() => {
     loadCombos();

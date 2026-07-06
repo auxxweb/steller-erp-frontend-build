@@ -44,9 +44,16 @@ export function recalculateInvoiceAmounts({
   };
 }
 
+export function sumInvoicePayments(invoice) {
+  return (invoice?.payments || []).reduce(
+    (sum, payment) => sum + (Math.max(0, Number(payment.amount) || 0)),
+    0,
+  );
+}
+
 export function mergeInvoiceAmounts(invoice) {
   if (!invoice) return null;
-  const hasRecordedPayments = (invoice.payments || []).length > 0;
+
   const lineSubtotal = (invoice.lineItems || []).reduce(
     (sum, line) =>
       sum + (Number(line.lineTotal) || Number(line.unitPrice) * Number(line.quantity) || 0),
@@ -54,12 +61,12 @@ export function mergeInvoiceAmounts(invoice) {
   );
   const storedSubtotal = invoice.amounts?.subtotal;
   const useStoredSubtotal =
-    !hasRecordedPayments &&
     storedSubtotal !== undefined &&
     storedSubtotal !== null &&
+    Number(storedSubtotal) > 0 &&
     storedSubtotal !== lineSubtotal;
 
-  const computed = recalculateInvoiceAmounts({
+  return recalculateInvoiceAmounts({
     lineItems: invoice.lineItems || [],
     subtotalOverride: useStoredSubtotal ? storedSubtotal : undefined,
     discount: invoice.amounts?.discount,
@@ -68,19 +75,8 @@ export function mergeInvoiceAmounts(invoice) {
     gstEnabled: invoice.amounts?.gstEnabled,
     gstRate: invoice.amounts?.gstRate,
     advanceAmount: invoice.amounts?.advanceAmount,
-    amountPaid: invoice.amounts?.amountPaid,
+    amountPaid: sumInvoicePayments(invoice),
   });
-
-  const serverBalance = Number(invoice.amounts?.balanceDue);
-  if (
-    Number.isFinite(serverBalance) &&
-    serverBalance > 0 &&
-    computed.balanceDue <= 0
-  ) {
-    return { ...computed, balanceDue: serverBalance };
-  }
-
-  return computed;
 }
 
 export function hasInvoiceRecordedPayments(invoice) {

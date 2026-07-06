@@ -81,6 +81,22 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: false,
       target: 'es2020',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('html5-qrcode') || id.includes('/qrcode/')) return 'vendor-qr';
+            if (
+              id.includes('react-router') ||
+              id.includes('react-dom') ||
+              id.includes('/react/')
+            ) {
+              return 'vendor-react';
+            }
+            return 'vendor';
+          },
+        },
+      },
     },
     server: {
       port: 5173,
