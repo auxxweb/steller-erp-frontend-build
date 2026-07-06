@@ -16,7 +16,7 @@ import { ROLES } from '../../utils/constants.js';
 import { fetchBranches } from '../../services/branchService.js';
 import { formatBranchOptionLabel } from '../../utils/branchHelpers.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
-import { createCustomer } from '../../services/customerService.js';
+import { createCustomer, lookupCustomerIdentity } from '../../services/customerService.js';
 import RentalCustomerPicker, {
   RENTAL_CUSTOMER_MODES,
 } from '../../components/rentals/RentalCustomerPicker.jsx';
@@ -196,6 +196,13 @@ function RentalCreatePage() {
     };
   };
 
+  const selectExistingCustomer = (existing) => {
+    setCustomer(existing.id);
+    setCustomerMode(RENTAL_CUSTOMER_MODES.EXISTING);
+    toast.info(`Existing customer selected: ${existing.name}`);
+    return existing.id;
+  };
+
   const resolveCustomerId = async () => {
     if (customer) return customer;
 
@@ -206,15 +213,34 @@ function RentalCreatePage() {
       if (isSuperAdmin && !branch) {
         throw new Error('Select a branch before creating a customer');
       }
-      const { data } = await createCustomer({
-        name: newCustomer.name.trim(),
-        phone: newCustomer.phone.trim(),
-        branch: isSuperAdmin ? branch : undefined,
-      });
-      const id = data.data.customer.id;
-      setCustomer(id);
-      setCustomerMode(RENTAL_CUSTOMER_MODES.EXISTING);
-      return id;
+
+      const phone = newCustomer.phone.trim();
+      const { data: lookupData } = await lookupCustomerIdentity({ phone });
+      const existing = lookupData.data.phoneMatch;
+      if (existing?.id) {
+        return selectExistingCustomer(existing);
+      }
+
+      try {
+        const { data } = await createCustomer({
+          name: newCustomer.name.trim(),
+          phone,
+          branch: isSuperAdmin ? branch : undefined,
+        });
+        const id = data.data.customer.id;
+        setCustomer(id);
+        setCustomerMode(RENTAL_CUSTOMER_MODES.EXISTING);
+        return id;
+      } catch (err) {
+        if (err.response?.status === 409) {
+          const { data: retryData } = await lookupCustomerIdentity({ phone });
+          const retryMatch = retryData.data.phoneMatch;
+          if (retryMatch?.id) {
+            return selectExistingCustomer(retryMatch);
+          }
+        }
+        throw err;
+      }
     }
 
     throw new Error('Select a customer or create a new one');
@@ -372,8 +398,8 @@ function RentalCreatePage() {
               <span className="form-label">Customer</span>
               <div className="mt-stellar-1">
                 <RentalCustomerPicker
+                  global
                   branchId={effectiveBranchId}
-                  disabled={isSuperAdmin && !branch}
                   value={customer}
                   onChange={(id) => setCustomer(id)}
                   mode={customerMode}

@@ -11,6 +11,7 @@ const MODES = {
 
 function RentalCustomerPicker({
   branchId,
+  global = false,
   disabled = false,
   value,
   onChange,
@@ -62,7 +63,7 @@ function RentalCustomerPicker({
       try {
         const { data } = await fetchCustomers({
           search: search.trim(),
-          branch: branchId || undefined,
+          ...(global ? { global: true } : { branch: branchId || undefined }),
           limit: 20,
           status: 'active',
         });
@@ -77,7 +78,7 @@ function RentalCustomerPicker({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, branchId, disabled, mode]);
+  }, [search, branchId, disabled, mode, global]);
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -101,6 +102,7 @@ function RentalCustomerPicker({
 
   const prevBranchRef = useRef(branchId);
   useEffect(() => {
+    if (global) return;
     if (prevBranchRef.current !== branchId) {
       onChange?.('');
       setSelected(null);
@@ -108,7 +110,7 @@ function RentalCustomerPicker({
       setResults([]);
     }
     prevBranchRef.current = branchId;
-  }, [branchId, onChange]);
+  }, [branchId, onChange, global]);
 
   const pickCustomer = (customer) => {
     setSelected(customer);
@@ -131,7 +133,7 @@ function RentalCustomerPicker({
   if (disabled) {
     return (
       <p className="text-sm text-stellar-text-muted">
-        Select a rental branch first to continue.
+        Customer selection is unavailable right now.
       </p>
     );
   }
