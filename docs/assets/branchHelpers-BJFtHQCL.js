@@ -1,0 +1,1 @@
+var e=`COMMON`;function t(t){return t?(typeof t==`string`?t:t.code)===e:!1}function n(e=[]){return e.filter(e=>!t(e))}function r(e){return e?t(e)?`All branches`:typeof e==`string`?e:e.name&&e.code?`${e.name} (${e.code})`:e.name||e.code||`—`:`—`}function i(e){return!e||t(e)?`All branches`:e.code?`${e.name} (${e.code})`:e.name}export{r as n,i as r,n as t};

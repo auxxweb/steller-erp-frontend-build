@@ -1,0 +1,1 @@
+import{t as e}from"./api-Ct1BQt_W.js";var t=(e={})=>({...e,_ts:Date.now()}),n=t=>e.post(`/leaves`,t),r=n=>e.get(`/leaves/me`,{params:t(n)}),i=n=>e.get(`/leaves`,{params:t(n)}),a=t=>e.patch(`/leaves/${t}/approve`),o=(t,n)=>e.patch(`/leaves/${t}/reject`,{rejectionReason:n});export{o as a,r as i,a as n,i as r,n as t};

@@ -1,0 +1,1 @@
+function e(e,{valueKey:t=`id`,getLabel:n,getKeywords:r}={}){return(e||[]).map(e=>{let i=e[t]??e.id??e._id??e.value;return{value:i==null?``:String(i),label:n?n(e):String(e.label??e.name??i??``),keywords:r?r(e):void 0,disabled:!!e.disabled}})}function t(e,t=`Select…`){return[{value:``,label:t},...e]}export{t as n,e as t};

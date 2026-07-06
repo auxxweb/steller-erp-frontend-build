@@ -1,0 +1,1 @@
+var e={ACTIVE:`active`,INACTIVE:`inactive`,CLOSED:`closed`},t={[e.ACTIVE]:`Active`,[e.INACTIVE]:`Inactive`,[e.CLOSED]:`Closed`},n=Object.entries(t).map(([e,t])=>({value:e,label:t})),r={line1:``,line2:``,city:``,state:``,postalCode:``,country:`India`},i={name:``,code:``,email:``,phone:``,address:{...r},manager:``,status:e.ACTIVE};export{i as a,r as i,t as n,n as r,e as t};
