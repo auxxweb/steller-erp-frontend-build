@@ -9,6 +9,7 @@ import RentalTimeline from '../../components/rentals/RentalTimeline.jsx';
 import useRentalBasePath, { useCanOperateRentals } from '../../hooks/useRentalBasePath.js';
 import { cancelRental, fetchRental } from '../../services/rentalService.js';
 import { RENTAL_STATUS, RENTAL_TYPE } from '../../utils/rentalConstants.js';
+import { formatUnitSerialLabel } from '../../utils/productConstants.js';
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
@@ -222,7 +223,7 @@ function RentalDetailPage() {
                   <p className="font-medium text-stellar-text">{item.product?.name}</p>
                   <p className="text-xs text-stellar-text-muted">
                     {item.product?.sku}
-                    {item.productUnit?.serialNumber && ` · ${item.productUnit.serialNumber}`}
+                    {item.productUnit && ` · ${formatUnitSerialLabel(item.productUnit)}`}
                   </p>
                 </div>
                 <div className="text-right text-sm">

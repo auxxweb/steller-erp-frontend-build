@@ -6,7 +6,7 @@ import { verifyQr } from '../../services/qrService.js';
 import { buildComboUnitSlots } from '../../utils/comboUnitHelpers.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
-import { UNIT_STATUS_LABELS } from '../../utils/productConstants.js';
+import { UNIT_STATUS_LABELS, formatUnitSerialLabel } from '../../utils/productConstants.js';
 
 function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }) {
   const [unitsByProduct, setUnitsByProduct] = useState({});
@@ -122,6 +122,8 @@ function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }
       <ul className="space-y-stellar-4">
         {activeSlots.map((slot) => {
           const units = unitsByProduct[slot.product] || [];
+          const selectedUnit = units.find((u) => String(u.id) === String(slot.productUnit));
+          const selectedLabel = formatUnitSerialLabel(selectedUnit);
           const qtyLabel = slot.lineQty > 1 ? ` (${slot.slotIndex + 1} of ${slot.lineQty})` : '';
           const slotDisabled = new Set(disabledUnitIds);
           if (slot.productUnit) slotDisabled.delete(String(slot.productUnit));
@@ -138,7 +140,11 @@ function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }
                     {qtyLabel}
                   </p>
                   <p className="text-xs text-stellar-text-muted">
-                    {slot.productUnit ? 'Serial selected' : 'Required for direct rental'}
+                    {selectedLabel ? (
+                      <span className="font-mono text-stellar-text">{selectedLabel}</span>
+                    ) : (
+                      'Required for direct rental'
+                    )}
                   </p>
                 </div>
                 {slot.productUnit ? (

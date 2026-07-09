@@ -8,6 +8,7 @@ import {
   buildPickupChecklistSlots,
   getRentalItemId,
 } from '../../utils/rentalItemHelpers.js';
+import { formatUnitSerialLabel } from '../../utils/productConstants.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
@@ -140,8 +141,8 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
   }, []);
 
   const finishScan = useCallback(
-    (serialNumber) => {
-      if (serialNumber) setLastScan(serialNumber);
+    (serialLabel) => {
+      if (serialLabel) setLastScan(serialLabel);
       closeScan();
     },
     [closeScan],
@@ -150,7 +151,7 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
   const applyUnitToSlot = useCallback(
     (slot, unit) => {
       setSlotAssignment(slot.slotKey, unit.id);
-      finishScan(unit.serialNumber);
+      finishScan(formatUnitSerialLabel(unit));
     },
     [finishScan, setSlotAssignment],
   );
@@ -181,7 +182,7 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
         );
         if (matchPreassigned) {
           markScanned(unit.id);
-          finishScan(unit.serialNumber);
+          finishScan(formatUnitSerialLabel(unit));
           return;
         }
 
@@ -284,6 +285,8 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
                 return !unitProductId || unitProductId.toString() === productIdStr;
               });
               const selected = assignments[slot.slotKey] || '';
+              const selectedUnit = units.find((u) => String(u.id) === String(selected));
+              const selectedLabel = formatUnitSerialLabel(selectedUnit);
               const lineQty = slotsPerItemQty.get(slot.rentalItemId) || 1;
               const qtyLabel =
                 lineQty > 1 ? ` (${slot.slotIndex + 1} of ${lineQty})` : '';
@@ -307,7 +310,11 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
                         </p>
                       ) : null}
                       <p className="text-xs text-stellar-text-muted">
-                        {selected ? 'Serial selected' : 'Select serial or scan QR'}
+                        {selectedLabel ? (
+                          <span className="font-mono text-stellar-text">{selectedLabel}</span>
+                        ) : (
+                          'Select serial or scan QR'
+                        )}
                       </p>
                     </div>
                     {selected && (

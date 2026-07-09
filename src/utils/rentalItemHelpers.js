@@ -1,3 +1,5 @@
+import { formatUnitSerialLabel } from './productConstants.js';
+
 /** Stable line-item id from API JSON. */
 export function getRentalItemId(item) {
   if (!item) return '';
@@ -35,7 +37,7 @@ export function buildPickupChecklistSlots(items = []) {
         item,
         kind: 'preassigned',
         unitId: unitIdFromProductUnit(item.productUnit),
-        serialLabel: item.productUnit?.serialNumber,
+        serialLabel: formatUnitSerialLabel(item.productUnit),
       });
       continue;
     }

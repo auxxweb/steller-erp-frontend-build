@@ -8,7 +8,7 @@ import { verifyQr } from '../../services/qrService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 import { RATE_TYPE_OPTIONS } from '../../utils/rentalConstants.js';
-import { UNIT_STATUS_LABELS } from '../../utils/productConstants.js';
+import { UNIT_STATUS_LABELS, formatUnitSerialLabel, unitSerialKeywords } from '../../utils/productConstants.js';
 import { formatBranchDisplay } from '../../utils/branchHelpers.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 
@@ -194,7 +194,7 @@ function RentalProductPicker({
     });
     loadUnits(productId, { force: true });
     onChange(lines.map((l, i) => (i === index ? updatedLine : l)));
-    toast.success(`${product.name} · ${unit.serialNumber} added`);
+    toast.success(`${product.name} · ${formatUnitSerialLabel(unit)} added`);
     return true;
   };
 
@@ -362,8 +362,8 @@ function RentalProductPicker({
                     options={withEmptyOption(
                       units.map((u) => ({
                         value: u.id,
-                        label: `${u.serialNumber}${crossBranch && u.branch ? ` @ ${formatBranchDisplay(u.branch)}` : ''} — ${UNIT_STATUS_LABELS[u.status] || u.status}`,
-                        keywords: u.serialNumber,
+                        label: `${formatUnitSerialLabel(u)}${crossBranch && u.branch ? ` @ ${formatBranchDisplay(u.branch)}` : ''} — ${UNIT_STATUS_LABELS[u.status] || u.status}`,
+                        keywords: unitSerialKeywords(u),
                         disabled: u.status !== 'available',
                       })),
                       'Select serial',
@@ -379,14 +379,19 @@ function RentalProductPicker({
                       Products.
                     </p>
                   )}
-                  {line.productUnit && (
-                    <p className="mt-stellar-1 text-xs text-emerald-600 dark:text-emerald-400">
-                      Serial selected
-                      {units.find((u) => u.id === line.productUnit)?.serialNumber
-                        ? `: ${units.find((u) => u.id === line.productUnit).serialNumber}`
-                        : ''}
-                    </p>
-                  )}
+                  {line.productUnit && (() => {
+                    const selectedUnit = units.find((u) => u.id === line.productUnit);
+                    const label = formatUnitSerialLabel(selectedUnit);
+                    return label ? (
+                      <p className="mt-stellar-1 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                        Serial selected: {label}
+                      </p>
+                    ) : (
+                      <p className="mt-stellar-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        Serial selected
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
             )}

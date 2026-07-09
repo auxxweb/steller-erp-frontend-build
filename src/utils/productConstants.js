@@ -92,3 +92,23 @@ export const EMPTY_UNIT_FORM = {
   location: { notes: '' },
   notes: '',
 };
+
+/** Serial with optional unique code, e.g. "SN-001 · UC-123". */
+export function formatUnitSerialWithCode(serialNumber, uniqueCode) {
+  const serial = String(serialNumber || '').trim();
+  const code = String(uniqueCode || '').trim();
+  if (!serial) return code;
+  if (!code) return serial;
+  return `${serial} · ${code}`;
+}
+
+export function formatUnitSerialLabel(unit) {
+  if (!unit) return '';
+  if (typeof unit === 'string') return unit;
+  return formatUnitSerialWithCode(unit.serialNumber, unit.uniqueCode);
+}
+
+export function unitSerialKeywords(unit) {
+  if (!unit || typeof unit === 'string') return unit || '';
+  return [unit.serialNumber, unit.uniqueCode].filter(Boolean).join(' ');
+}

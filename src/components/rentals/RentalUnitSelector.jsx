@@ -1,6 +1,6 @@
 import Button from '../ui/Button.jsx';
 import SearchableSelect from '../ui/SearchableSelect.jsx';
-import { UNIT_STATUS_LABELS } from '../../utils/productConstants.js';
+import { UNIT_STATUS_LABELS, formatUnitSerialLabel, unitSerialKeywords } from '../../utils/productConstants.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 
 function RentalUnitSelector({
@@ -20,8 +20,8 @@ function RentalUnitSelector({
   const options = withEmptyOption(
     toSelectOptions(units, {
       getLabel: (u) =>
-        `${u.serialNumber} — ${UNIT_STATUS_LABELS[u.status] || u.status}`,
-      getKeywords: (u) => u.serialNumber,
+        `${formatUnitSerialLabel(u)} — ${UNIT_STATUS_LABELS[u.status] || u.status}`,
+      getKeywords: unitSerialKeywords,
     }).map((opt) => {
       const unit = units.find((u) => String(u.id) === opt.value);
       const taken =
