@@ -1,1 +1,0 @@
-import{t as e}from"./vendor-react-DlW_TQ7p.js";import{i as t}from"./api-Ct1BQt_W.js";import{T as n}from"./customerService-BPGTpPnS.js";var r=e();function i({level:e,className:i}){let a=n[e]||n.medium;return(0,r.jsxs)(`span`,{className:t(`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`,a.badgeClass,i),children:[a.label,` risk`]})}export{i as t};
