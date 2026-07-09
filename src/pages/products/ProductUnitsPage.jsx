@@ -60,6 +60,7 @@ function ProductUnitsPage() {
     try {
       if (editUnit) {
         await updateUnit(editUnit.id, {
+          uniqueCode: values.uniqueCode,
           condition: values.condition,
           status: values.status,
           notes: values.notes,
@@ -68,6 +69,7 @@ function ProductUnitsPage() {
       } else {
         const { data } = await createProductUnit(productId, {
           serialNumber: values.serialNumber,
+          uniqueCode: values.uniqueCode || undefined,
           condition: values.condition,
           notes: values.notes,
         });

@@ -18,6 +18,7 @@ import {
 import { uploadProductUnitImages } from '../../services/uploadService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
+import { fetchWorkspaceSettings } from '../../services/settingsService.js';
 
 function productToForm(product) {
   return {
@@ -93,6 +94,7 @@ function ProductFormPage() {
   const [imageAssets, setImageAssets] = useState([]);
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const [gstPolicy, setGstPolicy] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,6 +106,9 @@ function ProductFormPage() {
     fetchCategories({ limit: 100 })
       .then(({ data }) => setCategories(data.data.categories))
       .catch(() => setCategories([]));
+    fetchWorkspaceSettings()
+      .then(({ data }) => setGstPolicy(data.data.gstPolicy || null))
+      .catch(() => setGstPolicy(null));
   }, []);
 
   useEffect(() => {
@@ -230,6 +235,7 @@ function ProductFormPage() {
         isSubmitting={submitting}
         submitLabel={isEdit ? 'Update product' : 'Create product'}
         productId={id}
+        gstPolicy={gstPolicy}
       />
     </div>
   );

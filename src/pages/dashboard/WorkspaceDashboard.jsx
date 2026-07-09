@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import DashboardTabs from '../../components/dashboard/DashboardTabs.jsx';
 import QuickActionsGrid from '../../components/dashboard/QuickActionsGrid.jsx';
@@ -11,6 +12,7 @@ import { fetchWorkspaceDashboard } from '../../services/dashboardService.js';
 import {
   DASHBOARD_TAB_LABELS,
   DASHBOARD_WORKSPACES,
+  getDashboardKpiLink,
   getDashboardQuickActions,
 } from '../../routes/config/dashboardConfig.js';
 import { ROLE_LABELS, ROLES } from '../../utils/constants.js';
@@ -110,11 +112,16 @@ function WorkspaceDashboard({ title }) {
               <div className="grid gap-stellar-3 sm:grid-cols-2 lg:grid-cols-3">
                 {(data?.kpis || []).map((kpi, index) => {
                   const accent = KPI_CARD_STYLES[index % KPI_CARD_STYLES.length];
-                  return (
+                  const link = getDashboardKpiLink(role, kpi.id);
+                  const card = (
                     <Card
-                      key={kpi.id}
                       variant="muted"
-                      className={cn('!p-stellar-4 border-l-4', accent.border, accent.bg)}
+                      className={cn(
+                        '!p-stellar-4 border-l-4 transition-stellar',
+                        accent.border,
+                        accent.bg,
+                        link && 'h-full group-hover:shadow-card group-focus-visible:ring-2 group-focus-visible:ring-stellar-accent',
+                      )}
                     >
                       <p className="text-xs font-medium uppercase tracking-wider text-stellar-text-subtle">
                         {kpi.label}
@@ -123,6 +130,25 @@ function WorkspaceDashboard({ title }) {
                         {formatKpi(kpi)}
                       </p>
                     </Card>
+                  );
+
+                  if (link) {
+                    return (
+                      <Link
+                        key={kpi.id}
+                        to={link}
+                        className="group block rounded-stellar-xl focus:outline-none"
+                        aria-label={`Open ${kpi.label}`}
+                      >
+                        {card}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <div key={kpi.id}>
+                      {card}
+                    </div>
                   );
                 })}
               </div>

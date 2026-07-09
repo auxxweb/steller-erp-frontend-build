@@ -38,6 +38,40 @@ export const getDashboardQuickActions = (role) => {
   return actions[role] || [];
 };
 
+/** KPI cards should open the most relevant workspace page for that metric. */
+export const getDashboardKpiLink = (role, kpiId) => {
+  const base = ROLE_BASE_PATHS[role];
+  if (!base) return null;
+
+  const links = {
+    [ROLES.SUPER_ADMIN]: {
+      branches: `${base}/branches`,
+      users: `${base}/users`,
+      activeRentals: `${base}/rentals/active`,
+      rentalsMonth: `${base}/rentals`,
+      salesMonth: `${base}/invoices`,
+      customers: `${base}/customers`,
+      products: `${base}/products`,
+    },
+    [ROLES.BRANCH_ADMIN]: {
+      activeRentals: `${base}/rentals/active`,
+      rentalsMonth: `${base}/rentals`,
+      salesMonth: `${base}/invoices`,
+      customers: `${base}/customers`,
+      products: `${base}/products`,
+      staff: `${base}/team`,
+    },
+    [ROLES.EMPLOYEE]: {
+      activeRentals: `${base}/rentals/active`,
+      jobsMonth: `${base}/rentals`,
+      invoices: `${base}/invoices`,
+      returns: `${base}/rentals/return`,
+    },
+  };
+
+  return links[role]?.[kpiId] || null;
+};
+
 export const DASHBOARD_TAB_LABELS = {
   overview: 'Overview',
   activity: 'Activity',

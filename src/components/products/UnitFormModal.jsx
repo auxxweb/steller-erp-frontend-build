@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
 import Input from '../ui/Input.jsx';
+import { ModalShell } from '../ui/Modal.jsx';
 import SearchableSelect from '../ui/SearchableSelect.jsx';
 import { MultiImageUpload } from '../upload/index.js';
 import {
@@ -55,6 +56,7 @@ function UnitFormModal({ open, unit, productId, onSubmit, onClose, loading }) {
     if (unit) {
       setValues({
         serialNumber: unit.serialNumber || '',
+        uniqueCode: unit.uniqueCode || '',
         condition: unit.condition || EMPTY_UNIT_FORM.condition,
         status: unit.status || EMPTY_UNIT_FORM.status,
         notes: unit.notes || '',
@@ -83,15 +85,9 @@ function UnitFormModal({ open, unit, productId, onSubmit, onClose, loading }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center p-stellar-4 sm:items-center">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="Close"
-      />
+    <ModalShell onClose={onClose} aria-labelledby="unit-form-title" overlayClassName="p-stellar-4">
       <Card variant="elevated" className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto !p-stellar-6">
-        <h2 className="text-lg font-semibold text-stellar-text">
+        <h2 id="unit-form-title" className="text-lg font-semibold text-stellar-text">
           {isEdit ? 'Edit unit' : 'Add serial unit'}
         </h2>
         <form onSubmit={handleSubmit} className="mt-stellar-4 space-y-stellar-4">
@@ -102,6 +98,12 @@ function UnitFormModal({ open, unit, productId, onSubmit, onClose, loading }) {
             error={errors.serialNumber}
             required
             disabled={isEdit}
+          />
+          <Input
+            label="Unique identification code"
+            value={values.uniqueCode}
+            onChange={(e) => setField('uniqueCode', e.target.value)}
+            hint="Optional — shown alongside the serial number when set."
           />
           <div className="grid gap-stellar-4 sm:grid-cols-2">
             <SearchableSelect
@@ -160,7 +162,7 @@ function UnitFormModal({ open, unit, productId, onSubmit, onClose, loading }) {
           </div>
         </form>
       </Card>
-    </div>
+    </ModalShell>
   );
 }
 

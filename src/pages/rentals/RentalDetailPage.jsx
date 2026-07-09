@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useInvoiceRedirect } from '../../hooks/useInvoiceRedirect.js';
 import Card from '../../components/ui/Card.jsx';
+import Button from '../../components/ui/Button.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import RentalTimeline from '../../components/rentals/RentalTimeline.jsx';
 import useRentalBasePath, { useCanOperateRentals } from '../../hooks/useRentalBasePath.js';
-import { fetchRental } from '../../services/rentalService.js';
+import { cancelRental, fetchRental } from '../../services/rentalService.js';
 import { RENTAL_STATUS, RENTAL_TYPE } from '../../utils/rentalConstants.js';
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
@@ -27,6 +28,7 @@ function RentalDetailPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -70,6 +72,26 @@ function RentalDetailPage() {
   const { rental, items = [] } = data;
   const status = rental.status;
   const isPrebook = rental.rentalType === RENTAL_TYPE.PREBOOK;
+  const canCancelPrebook =
+    isPrebook &&
+    [RENTAL_STATUS.DRAFT, RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(status) &&
+    canOperate;
+
+  const handleCancelPrebook = async () => {
+    const reason = window.prompt('Reason for cancelling this pre-booking?');
+    if (!reason?.trim()) return;
+
+    setCancelling(true);
+    try {
+      await cancelRental(id, reason.trim());
+      toast.success('Pre-booking cancelled');
+      await load();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to cancel pre-booking'));
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
@@ -95,6 +117,17 @@ function RentalDetailPage() {
                 Go to pickup
               </Link>
             )}
+          {canCancelPrebook && (
+            <Button
+              type="button"
+              variant="danger"
+              className="btn-md"
+              disabled={cancelling}
+              onClick={handleCancelPrebook}
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel pre-booking'}
+            </Button>
+          )}
           {[
             RENTAL_STATUS.ACTIVE,
             RENTAL_STATUS.OVERDUE,

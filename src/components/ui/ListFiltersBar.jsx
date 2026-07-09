@@ -1,4 +1,5 @@
 import Button from './Button.jsx';
+import SearchField from './SearchField.jsx';
 import { DATE_PERIOD_OPTIONS } from '../../utils/listConstants.js';
 
 /**
@@ -9,6 +10,7 @@ function ListFiltersBar({
   idPrefix = 'list',
   search = '',
   onSearchChange,
+  onSearchSubmit,
   searchPlaceholder = 'Search…',
   period = '',
   onPeriodChange,
@@ -39,19 +41,14 @@ function ListFiltersBar({
         }`}
       >
         {showSearch && (
-          <div className="form-group sm:col-span-2">
-            <label htmlFor={`${idPrefix}-search`} className="form-label">
-              Search
-            </label>
-            <input
-              id={`${idPrefix}-search`}
-              type="search"
-              className="input w-full"
-              placeholder={searchPlaceholder}
-              value={search}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-            />
-          </div>
+          <SearchField
+            id={`${idPrefix}-search`}
+            className="sm:col-span-2"
+            value={search}
+            onChange={onSearchChange}
+            onSearch={onSearchSubmit}
+            placeholder={searchPlaceholder}
+          />
         )}
         {showDateFilters && (
           <div className="form-group">

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import RentalStatusBadge from './RentalStatusBadge.jsx';
 import { formatDate } from '../../utils/format.js';
@@ -108,4 +109,4 @@ function RentalTable({ rentals, loading, basePath, compact = false }) {
   );
 }
 
-export default RentalTable;
+export default memo(RentalTable);

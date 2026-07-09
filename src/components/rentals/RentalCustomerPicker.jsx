@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Input from '../ui/Input.jsx';
+import SearchField from '../ui/SearchField.jsx';
 import RiskBadge from '../customers/RiskBadge.jsx';
 import { fetchCustomer, fetchCustomers } from '../../services/customerService.js';
 import { formatCurrency } from '../../utils/format.js';
@@ -21,12 +22,39 @@ function RentalCustomerPicker({
   onModeChange,
 }) {
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const containerRef = useRef(null);
-  const debounceRef = useRef(null);
+
+  const runSearch = useCallback(async () => {
+    const q = search.trim();
+    setAppliedSearch(q);
+    setOpen(true);
+
+    if (!q) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const { data } = await fetchCustomers({
+        search: q,
+        ...(global ? { global: true } : { branch: branchId || undefined }),
+        limit: 20,
+        status: 'active',
+      });
+      setResults(data.data.customers || []);
+    } catch {
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, [search, branchId, global]);
 
   useEffect(() => {
     if (!value) {
@@ -45,40 +73,7 @@ function RentalCustomerPicker({
     return () => {
       cancelled = true;
     };
-  }, [value, branchId]);
-
-  useEffect(() => {
-    if (mode !== MODES.EXISTING) return undefined;
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    if (!search.trim()) {
-      setResults([]);
-      setSearching(false);
-      return undefined;
-    }
-
-    setSearching(true);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const { data } = await fetchCustomers({
-          search: search.trim(),
-          ...(global ? { global: true } : { branch: branchId || undefined }),
-          limit: 20,
-          status: 'active',
-        });
-        setResults(data.data.customers || []);
-      } catch {
-        setResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [search, branchId, disabled, mode, global]);
+  }, [value]);
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -95,6 +90,7 @@ function RentalCustomerPicker({
       onChange?.('');
       setSelected(null);
       setSearch('');
+      setAppliedSearch('');
       setResults([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset when mode toggles
@@ -107,6 +103,7 @@ function RentalCustomerPicker({
       onChange?.('');
       setSelected(null);
       setSearch('');
+      setAppliedSearch('');
       setResults([]);
     }
     prevBranchRef.current = branchId;
@@ -115,6 +112,7 @@ function RentalCustomerPicker({
   const pickCustomer = (customer) => {
     setSelected(customer);
     setSearch('');
+    setAppliedSearch('');
     setResults([]);
     setOpen(false);
     onChange?.(customer.id, customer);
@@ -123,6 +121,7 @@ function RentalCustomerPicker({
   const clearSelection = () => {
     setSelected(null);
     setSearch('');
+    setAppliedSearch('');
     onChange?.('', null);
   };
 
@@ -215,23 +214,18 @@ function RentalCustomerPicker({
             </div>
           ) : (
             <>
-              <label htmlFor="rental-customer-search" className="form-label">
-                Search by name or phone
-              </label>
-              <input
+              <SearchField
                 id="rental-customer-search"
-                type="search"
-                className="input w-full"
-                placeholder="Type name or phone number…"
+                label="Search by name or phone"
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
+                onChange={(value) => {
+                  setSearch(value);
                   setOpen(true);
                 }}
-                onFocus={() => setOpen(true)}
-                autoComplete="off"
+                onSearch={runSearch}
+                placeholder="Type name or phone number…"
               />
-              {open && search.trim() && (
+              {open && appliedSearch && (
                 <ul
                   className="absolute z-20 mt-stellar-1 max-h-56 w-full overflow-auto rounded-lg border border-stellar-border bg-stellar-surface shadow-lg"
                   role="listbox"

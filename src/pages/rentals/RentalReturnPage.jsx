@@ -3,48 +3,59 @@ import { Link } from 'react-router-dom';
 import { useInvoiceRedirect } from '../../hooks/useInvoiceRedirect.js';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
+import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import RentalQueuePicker from '../../components/rentals/RentalQueuePicker.jsx';
 import RentalQrChecklist from '../../components/rentals/RentalQrChecklist.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
-import { fetchRentals, fetchRental, returnRental } from '../../services/rentalService.js';
-import { RETURN_STATUSES } from '../../utils/rentalConstants.js';
+import useRentalList from '../../hooks/useRentalList.js';
+import { fetchRental, returnRental } from '../../services/rentalService.js';
+import { RETURN_STATUSES, RENTAL_STATUS_OPTIONS } from '../../utils/rentalConstants.js';
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
+const RETURN_STATUS_OPTIONS = RENTAL_STATUS_OPTIONS.filter((opt) =>
+  RETURN_STATUSES.includes(opt.value),
+);
+
 function RentalReturnPage() {
   const basePath = useRentalBasePath();
   const { goToInvoiceAfterReturn } = useInvoiceRedirect();
-  const [queue, setQueue] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [detail, setDetail] = useState(null);
   const [sendToMaintenance, setSendToMaintenance] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [scansReady, setScansReady] = useState(false);
 
-  const loadQueue = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await fetchRentals({
-        status: RETURN_STATUSES.join(','),
-        limit: 50,
-        sortBy: 'scheduledEndAt',
-        sortOrder: 'asc',
-      });
-      setQueue(data.data.rentals);
-    } catch {
-      setQueue([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadQueue();
-  }, [loadQueue]);
+  const {
+    rentals: queue,
+    pagination,
+    page,
+    setPage,
+    loading,
+    search,
+    setSearch,
+    submitSearch,
+    period,
+    setPeriod,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    statusFilter,
+    setStatusFilter,
+    resetPage,
+    reload,
+  } = useRentalList({
+    defaultStatuses: RETURN_STATUSES,
+    sortBy: 'scheduledEndAt',
+    sortOrder: 'asc',
+    limit: 15,
+    dateField: 'scheduledEndAt',
+  });
 
   useEffect(() => {
     setScansReady(false);
@@ -86,7 +97,7 @@ function RentalReturnPage() {
       setDetail(null);
       setSendToMaintenance(false);
       setScansReady(false);
-      loadQueue();
+      reload();
       goToInvoiceAfterReturn(data, { partial: data.data?.partial });
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Return failed'));
@@ -108,18 +119,44 @@ function RentalReturnPage() {
       <RentalNav />
 
       <div className="grid gap-stellar-6 lg:grid-cols-5">
-        <Card className="!p-stellar-5 lg:col-span-2">
-          <h2 className="mb-stellar-4 text-sm font-semibold text-stellar-text">Return queue</h2>
+        <Card className="!p-stellar-5 lg:col-span-2 space-y-stellar-4">
+          <h2 className="text-sm font-semibold text-stellar-text">Return queue</h2>
+          <RentalListFilters
+            idPrefix="rental-return"
+            search={search}
+            onSearchChange={setSearch}
+            onSearchSubmit={() => {
+              submitSearch();
+              resetPage();
+            }}
+            period={period}
+            onPeriodChange={(v) => {
+              setPeriod(v);
+              resetPage();
+            }}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            statusFilter={statusFilter}
+            onStatusChange={(v) => {
+              setStatusFilter(v);
+              resetPage();
+            }}
+            statusOptions={RETURN_STATUS_OPTIONS}
+            allStatusLabel="All return statuses"
+          />
           <RentalQueuePicker
             rentals={queue}
             selectedId={selectedId}
             onSelect={setSelectedId}
             loading={loading}
             emptyMessage="No rentals due for return."
-            searchPlaceholder="Search booking #, customer…"
             dateField="scheduledEndAt"
             dateLabel="Due"
+            hideSearch
           />
+          <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />
         </Card>
 
         <div className="lg:col-span-3">

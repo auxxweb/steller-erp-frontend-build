@@ -86,6 +86,7 @@ export const EMPTY_PRODUCT_FORM = {
 
 export const EMPTY_UNIT_FORM = {
   serialNumber: '',
+  uniqueCode: '',
   condition: PRODUCT_CONDITION.GOOD,
   status: PRODUCT_UNIT_STATUS.AVAILABLE,
   location: { notes: '' },

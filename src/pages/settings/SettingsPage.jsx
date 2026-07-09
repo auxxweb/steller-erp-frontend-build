@@ -8,7 +8,11 @@ import useAuth from '../../hooks/useAuth.js';
 import useSettingsBasePath from '../../hooks/useSettingsBasePath.js';
 import { ROLE_BASE_PATHS, ROLE_NAV_ITEMS } from '../../routes/config/routeConfig.js';
 import { ROLE_LABELS, ROLES } from '../../utils/constants.js';
-import { fetchWorkspaceSettings, updateBranchSettings } from '../../services/settingsService.js';
+import {
+  fetchWorkspaceSettings,
+  updateBranchSettings,
+  updateOrganizationSettings,
+} from '../../services/settingsService.js';
 import { updateProfile } from '../../services/authService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
@@ -214,6 +218,149 @@ function BranchSettingsForm({ branch, onSaved }) {
   );
 }
 
+function OrganizationGstSettingsForm({ organization, onSaved }) {
+  const [form, setForm] = useState({
+    gstNumber: organization?.gst?.gstNumber ?? '',
+    gstPercentage: organization?.gst?.gstPercentage ?? 18,
+    pricesIncludeGst: Boolean(organization?.gst?.pricesIncludeGst),
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!organization) return;
+    setForm({
+      gstNumber: organization.gst?.gstNumber ?? '',
+      gstPercentage: organization.gst?.gstPercentage ?? 18,
+      pricesIncludeGst: Boolean(organization.gst?.pricesIncludeGst),
+    });
+  }, [organization]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const gstNumber = form.gstNumber.trim().toUpperCase();
+    const gstPercentage = Number(form.gstPercentage);
+
+    if (gstNumber && gstNumber.length !== 15) {
+      toast.error('GST number must be 15 characters, or leave it blank');
+      return;
+    }
+    if (!Number.isFinite(gstPercentage) || gstPercentage < 0 || gstPercentage > 100) {
+      toast.error('GST percentage must be between 0 and 100');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data } = await updateOrganizationSettings({
+        gst: {
+          gstNumber,
+          gstPercentage,
+          pricesIncludeGst: Boolean(form.pricesIncludeGst),
+        },
+      });
+      toast.success('GST settings saved');
+      onSaved?.(data.data.organization);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save GST settings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SettingsSection
+      title="GST settings"
+      description="Organisation-wide GST number, rate, and how product rental prices should be treated on invoices."
+    >
+      <form onSubmit={handleSubmit} className="max-w-xl space-y-stellar-4">
+        <Input
+          label="GST number (GSTIN)"
+          value={form.gstNumber}
+          onChange={(e) => setForm((f) => ({ ...f, gstNumber: e.target.value.toUpperCase() }))}
+          hint="Optional — 15-character GSTIN shown on invoices"
+          maxLength={15}
+        />
+        <Input
+          label="GST percentage (%)"
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          value={form.gstPercentage}
+          onChange={(e) => setForm((f) => ({ ...f, gstPercentage: e.target.value }))}
+        />
+        <label className="flex items-start gap-stellar-3 rounded-stellar-lg border border-stellar-border bg-stellar-surface-muted/40 p-stellar-4 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={form.pricesIncludeGst}
+            onChange={(e) => setForm((f) => ({ ...f, pricesIncludeGst: e.target.checked }))}
+          />
+          <span>
+            <span className="font-medium text-stellar-text">Product rental prices include GST</span>
+            <span className="mt-stellar-1 block text-stellar-text-muted">
+              When enabled, prices entered in the product section already include GST and the
+              invoice will not show a separate GST toggle. When disabled, prices are GST-exclusive
+              and staff can apply GST on each invoice.
+            </span>
+          </span>
+        </label>
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save GST settings'}
+        </Button>
+      </form>
+    </SettingsSection>
+  );
+}
+
+function OrganizationRiskSettingsForm({ organization, onSaved }) {
+  const [limit, setLimit] = useState(
+    organization?.risk?.prebookCancellationLimit ?? 2,
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { data } = await updateOrganizationSettings({
+        risk: {
+          prebookCancellationLimit: Number(limit),
+        },
+      });
+      toast.success('Risk settings saved');
+      onSaved?.(data.data.organization);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save risk settings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SettingsSection
+      title="Risk settings"
+      description="Global thresholds used when calculating customer risk."
+    >
+      <form onSubmit={handleSubmit} className="max-w-md space-y-stellar-4">
+        <Input
+          label="Pre-booking cancellation limit"
+          type="number"
+          min="0"
+          step="1"
+          value={limit}
+          onChange={(e) => setLimit(e.target.value)}
+          hint="Cancelled pre-bookings above this count increase the customer's risk score."
+        />
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save risk settings'}
+        </Button>
+      </form>
+    </SettingsSection>
+  );
+}
+
 function ProfileForm({ user, onSaved }) {
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -327,6 +474,20 @@ function SettingsPage() {
       )}
 
       {role && <WorkspaceLinks role={role} />}
+
+      {role === ROLES.SUPER_ADMIN && (
+        <OrganizationGstSettingsForm
+          organization={data?.organization}
+          onSaved={(organization) => setData((p) => ({ ...p, organization }))}
+        />
+      )}
+
+      {role === ROLES.SUPER_ADMIN && (
+        <OrganizationRiskSettingsForm
+          organization={data?.organization}
+          onSaved={(organization) => setData((p) => ({ ...p, organization }))}
+        />
+      )}
 
       {role === ROLES.SUPER_ADMIN && (
         <SettingsSection

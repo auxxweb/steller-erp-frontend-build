@@ -45,7 +45,14 @@ function ProductUnitTable({
           <tbody>
             {units.map((unit) => (
               <tr key={unit.id}>
-                <td className="font-mono text-sm">{unit.serialNumber}</td>
+                <td className="font-mono text-sm">
+                  {unit.serialNumber}
+                  {unit.uniqueCode && (
+                    <span className="block text-xs text-stellar-text-muted">
+                      {unit.uniqueCode}
+                    </span>
+                  )}
+                </td>
                 <td>
                   <UnitStatusBadge status={unit.status} />
                 </td>
@@ -103,6 +110,11 @@ function ProductUnitTable({
             <div className="flex items-start justify-between gap-stellar-2">
               <p className="font-mono text-sm font-medium text-stellar-text">
                 {unit.serialNumber}
+                {unit.uniqueCode && (
+                  <span className="block text-xs font-normal text-stellar-text-muted">
+                    {unit.uniqueCode}
+                  </span>
+                )}
               </p>
               <UnitStatusBadge status={unit.status} />
             </div>

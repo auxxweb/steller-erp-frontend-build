@@ -1,7 +1,7 @@
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -15,6 +15,7 @@ import useComboBasePath, { useCanManageCombos } from '../../hooks/useComboBasePa
 import { fetchCombos, fetchComboStats, deleteCombo } from '../../services/comboService.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 
 function ComboListPage() {
   const basePath = useComboBasePath();
@@ -29,6 +30,7 @@ function ComboListPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -57,9 +59,12 @@ function ComboListPage() {
     }
   }, [page, dateParams, statusFilter]);
 
-  useEffect(() => {
-    loadCombos();
-  }, [loadCombos]);
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter }),
+    [dateParams, statusFilter],
+  );
+
+  useFilterPageEffect({ filterKey, page, setPage, load: loadCombos });
 
   useEffect(() => {
     let cancelled = false;
@@ -77,10 +82,14 @@ function ComboListPage() {
     };
   }, []);
 
+  const applySearch = () => {
+    submitSearch();
+    setPage(1);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    loadCombos();
+    applySearch();
   };
 
   const handleDelete = async (combo) => {
@@ -123,6 +132,7 @@ function ComboListPage() {
               idPrefix="combo"
               search={search}
               onSearchChange={setSearch}
+              onSearchSubmit={applySearch}
               searchPlaceholder="Search name or code…"
               period={period}
               onPeriodChange={(v) => {

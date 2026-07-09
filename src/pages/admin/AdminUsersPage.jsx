@@ -285,6 +285,8 @@ function AdminUsersPage() {
   const {
     search,
     setSearch,
+    submitSearch,
+    appliedSearch,
     period,
     setPeriod,
     dateFrom,
@@ -334,7 +336,7 @@ function AdminUsersPage() {
 
   const displayedUsers = useMemo(() => {
     const list = userTab === 'deactivated' ? deactivatedUsers : activeUsers;
-    const q = search.trim().toLowerCase();
+    const q = appliedSearch.trim().toLowerCase();
     if (!q) return list;
     return list.filter((u) => {
       const haystack = [u.name, u.email, u.phone, u.employeeId]
@@ -343,7 +345,7 @@ function AdminUsersPage() {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [userTab, activeUsers, deactivatedUsers, search]);
+  }, [userTab, activeUsers, deactivatedUsers, appliedSearch]);
 
   const loadShifts = async (branchId) => {
     if (!branchId) {
@@ -665,6 +667,7 @@ function AdminUsersPage() {
             idPrefix="admin-users"
             search={search}
             onSearchChange={setSearch}
+            onSearchSubmit={submitSearch}
             searchPlaceholder="Name, email, or phone…"
             period={period}
             onPeriodChange={setPeriod}

@@ -41,6 +41,7 @@ function ProductForm({
   submitLabel,
   productId,
   branchId,
+  gstPolicy,
 }) {
   const setField = (field, val) => onChange({ ...values, [field]: val });
   const setPricingGroup = (group, field, val) =>
@@ -131,6 +132,16 @@ function ProductForm({
       <Card>
         <Card.Header>
           <Card.Title>Pricing (INR)</Card.Title>
+          {gstPolicy && (
+            <Card.Description>
+              {gstPolicy.pricesIncludeGst
+                ? 'Prices entered here are GST-inclusive. Invoices will not add GST on top.'
+                : 'Prices entered here are GST-exclusive. Staff can apply GST when creating invoices.'}
+              {gstPolicy.gstPercentage != null
+                ? ` Organisation GST rate: ${gstPolicy.gstPercentage}%.`
+                : ''}
+            </Card.Description>
+          )}
         </Card.Header>
         <Card.Content className="space-y-stellar-6">
           <div>

@@ -1,20 +1,13 @@
 import Button from '../ui/Button.jsx';
+import { ModalShell } from '../ui/Modal.jsx';
 
 function BlockCustomerModal({ customer, open, loading, onConfirm, onCancel }) {
   if (!open || !customer) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-stellar-4 sm:items-center">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/50"
-        aria-label="Close"
-        onClick={onCancel}
-      />
+    <ModalShell onClose={onCancel} aria-labelledby="block-customer-title" overlayClassName="p-stellar-4">
       <div
-        role="dialog"
-        aria-labelledby="block-customer-title"
-        className="relative w-full max-w-md rounded-t-stellar-xl border border-stellar-border bg-stellar-surface p-stellar-6 shadow-stellar-lg sm:rounded-stellar-xl"
+        className="relative z-10 w-full max-w-md rounded-t-stellar-xl border border-stellar-border bg-stellar-surface p-stellar-6 shadow-stellar-lg sm:rounded-stellar-xl"
       >
         <h2 id="block-customer-title" className="text-lg font-semibold text-stellar-text">
           Block customer
@@ -52,7 +45,7 @@ function BlockCustomerModal({ customer, open, loading, onConfirm, onCancel }) {
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

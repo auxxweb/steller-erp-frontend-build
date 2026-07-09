@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalTable from '../../components/rentals/RentalTable.jsx';
+import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import useRentalBasePath, { useCanWriteRentals } from '../../hooks/useRentalBasePath.js';
-import { fetchRentalStats, fetchRentals } from '../../services/rentalService.js';
+import useRentalList from '../../hooks/useRentalList.js';
+import { fetchRentalStats } from '../../services/rentalService.js';
 import { ACTIVE_RENTAL_STATUSES } from '../../utils/rentalConstants.js';
 
 function QuickLink({ to, title, description, accent }) {
@@ -25,24 +28,41 @@ function RentalHubPage() {
   const basePath = useRentalBasePath();
   const canWrite = useCanWriteRentals();
   const [stats, setStats] = useState(null);
-  const [recent, setRecent] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const {
+    rentals,
+    pagination,
+    page,
+    setPage,
+    loading,
+    search,
+    setSearch,
+    submitSearch,
+    period,
+    setPeriod,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    statusFilter,
+    setStatusFilter,
+    resetPage,
+  } = useRentalList({
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    limit: 15,
+  });
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
+      setStatsLoading(true);
       try {
-        const [statsRes, listRes] = await Promise.all([
-          fetchRentalStats(),
-          fetchRentals({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
-        ]);
-        if (!cancelled) {
-          setStats(statsRes.data.data.stats);
-          setRecent(listRes.data.data.rentals);
-        }
+        const { data } = await fetchRentalStats();
+        if (!cancelled) setStats(data.data.stats);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setStatsLoading(false);
       }
     })();
     return () => {
@@ -77,7 +97,7 @@ function RentalHubPage() {
         <Card variant="muted" className="!p-stellar-4">
           <p className="text-xs font-medium uppercase text-stellar-text-subtle">Active</p>
           <p className="mt-stellar-1 text-2xl font-semibold tabular-nums">
-            {loading ? '—' : activeCount}
+            {statsLoading ? '—' : activeCount}
           </p>
         </Card>
         <Card variant="muted" className="!p-stellar-4">
@@ -131,10 +151,35 @@ function RentalHubPage() {
       </div>
 
       <Card className="!p-0 overflow-hidden">
-        <div className="border-b border-stellar-border p-stellar-4">
-          <h2 className="text-sm font-semibold text-stellar-text">Recent bookings</h2>
+        <div className="border-b border-stellar-border p-stellar-4 space-y-stellar-4">
+          <h2 className="text-sm font-semibold text-stellar-text">All bookings</h2>
+          <RentalListFilters
+            idPrefix="rental-hub"
+            search={search}
+            onSearchChange={setSearch}
+            onSearchSubmit={() => {
+              submitSearch();
+              resetPage();
+            }}
+            period={period}
+            onPeriodChange={(v) => {
+              setPeriod(v);
+              resetPage();
+            }}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            statusFilter={statusFilter}
+            onStatusChange={(v) => {
+              setStatusFilter(v);
+              resetPage();
+            }}
+            allStatusLabel="All statuses"
+          />
         </div>
-        <RentalTable rentals={recent} loading={loading} basePath={basePath} compact />
+        <RentalTable rentals={rentals} loading={loading} basePath={basePath} />
+        <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />
       </Card>
     </div>
   );

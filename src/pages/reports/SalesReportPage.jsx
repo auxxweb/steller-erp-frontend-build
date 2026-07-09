@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -8,6 +8,7 @@ import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import ReportsNav from '../../components/reports/ReportsNav.jsx';
 import { SalesSummaryCards } from '../../components/reports/ReportSummaryCards.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import useReportBasePath from '../../hooks/useReportBasePath.js';
 import useInvoiceBasePath from '../../hooks/useInvoiceBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
@@ -31,6 +32,7 @@ function SalesReportPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -74,13 +76,12 @@ function SalesReportPage() {
     }
   }, [page, dateParams, statusFilter, lockedFilter, branchFilter]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter, lockedFilter, branchFilter }),
+    [dateParams, statusFilter, lockedFilter, branchFilter],
+  );
 
-  useEffect(() => {
-    setPage(1);
-  }, [dateParams, statusFilter, lockedFilter, branchFilter]);
+  useFilterPageEffect({ filterKey, page, setPage, load });
 
   useEffect(() => {
     if (!isSuperAdmin) return;
@@ -145,6 +146,7 @@ function SalesReportPage() {
           idPrefix="sales-report"
           search={search}
           onSearchChange={setSearch}
+          onSearchSubmit={submitSearch}
           searchPlaceholder="Invoice # or customer name…"
           period={period}
           onPeriodChange={setPeriod}

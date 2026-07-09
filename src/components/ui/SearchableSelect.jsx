@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import SearchField from './SearchField.jsx';
 import { cn } from '../../utils/cn.js';
 
 /**
@@ -27,8 +28,8 @@ function SearchableSelect({
   const listboxId = `${controlId}-listbox`;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
   const rootRef = useRef(null);
-  const searchRef = useRef(null);
 
   const normalizedValue = value == null ? '' : String(value);
 
@@ -38,13 +39,13 @@ function SearchableSelect({
   );
 
   const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    const term = appliedQuery.trim().toLowerCase();
     if (!term) return options;
     return options.filter((opt) => {
       const haystack = `${opt.label ?? ''} ${opt.keywords ?? ''}`.toLowerCase();
       return haystack.includes(term);
     });
-  }, [options, query]);
+  }, [options, appliedQuery]);
 
   const emitChange = (nextValue) => {
     onChange?.({
@@ -55,6 +56,7 @@ function SearchableSelect({
   const close = () => {
     setOpen(false);
     setQuery('');
+    setAppliedQuery('');
   };
 
   useEffect(() => {
@@ -64,10 +66,6 @@ function SearchableSelect({
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
-
-  useEffect(() => {
-    if (open) searchRef.current?.focus();
   }, [open]);
 
   return (
@@ -128,16 +126,15 @@ function SearchableSelect({
             role="presentation"
           >
             <div className="border-b border-stellar-border p-stellar-2">
-              <input
-                ref={searchRef}
-                type="search"
-                className="input w-full text-sm"
-                placeholder={searchPlaceholder}
+              <SearchField
+                id={`${controlId}-search`}
+                hideLabel
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') close();
-                }}
+                onChange={setQuery}
+                onSearch={() => setAppliedQuery(query)}
+                placeholder={searchPlaceholder}
+                inputClassName="text-sm"
+                className="!mb-0"
               />
             </div>
             <ul

@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import Button from '../ui/Button.jsx';
 
 async function stopScanner(instance) {
@@ -47,6 +46,7 @@ function QrScanner({ onScan, onError, paused = false, className = '' }) {
       startingRef.current = true;
       clearRegionElement(regionId);
 
+      const { Html5Qrcode } = await import('html5-qrcode');
       const scanner = new Html5Qrcode(regionId, { verbose: false });
       scannerRef.current = scanner;
 
@@ -101,7 +101,7 @@ function QrScanner({ onScan, onError, paused = false, className = '' }) {
       setActive(false);
       stopScanner(instance).finally(() => clearRegionElement(regionId));
     };
-  }, [regionId]);
+  }, [regionId, onError]);
 
   const handleManualRestart = async () => {
     lastScanRef.current = '';

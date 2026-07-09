@@ -41,7 +41,7 @@ function RentalCalendarPage() {
           Booking calendar
         </h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-          Tap a booking to open details.
+          Select a day to view all bookings for that date.
         </p>
       </div>
 

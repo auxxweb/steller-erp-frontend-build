@@ -43,6 +43,12 @@ export const ACTIVE_RENTAL_STATUSES = [
 
 export const PICKUP_STATUSES = [RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED];
 
+/** Prebook pickup list — includes cancelled bookings under "All pickup statuses". */
+export const PREBOOK_PICKUP_QUEUE_STATUSES = [
+  ...PICKUP_STATUSES,
+  RENTAL_STATUS.CANCELLED,
+];
+
 export const RETURN_STATUSES = [
   RENTAL_STATUS.PICKED_UP,
   RENTAL_STATUS.ACTIVE,
@@ -97,6 +103,11 @@ export const RENTAL_STATUS_META = {
     className: 'bg-stellar-surface-muted text-stellar-text-muted',
   },
 };
+
+export const RENTAL_STATUS_OPTIONS = Object.values(RENTAL_STATUS).map((value) => ({
+  value,
+  label: RENTAL_STATUS_META[value]?.label || value.replace(/_/g, ' '),
+}));
 
 export const RATE_TYPE_OPTIONS = [
   { value: 'daily', label: 'Daily' },

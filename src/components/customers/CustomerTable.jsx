@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import CustomerStatusBadge from './CustomerStatusBadge.jsx';
 import RiskBadge from './RiskBadge.jsx';
@@ -176,4 +177,4 @@ function CustomerTable({ customers, loading, basePath, canManage, onDelete }) {
   );
 }
 
-export default CustomerTable;
+export default memo(CustomerTable);

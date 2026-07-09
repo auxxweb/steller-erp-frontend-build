@@ -1,7 +1,7 @@
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -10,6 +10,7 @@ import ProductFilters from '../../components/products/ProductFilters.jsx';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import Button from '../../components/ui/Button.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import ProductStatsCards from '../../components/products/ProductStatsCards.jsx';
 import DeleteProductModal from '../../components/products/DeleteProductModal.jsx';
 import { fetchCategories } from '../../services/categoryService.js';
@@ -34,6 +35,7 @@ function ProductListPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -66,9 +68,12 @@ function ProductListPage() {
     }
   }, [page, dateParams, statusFilter, categoryFilter]);
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter, categoryFilter }),
+    [dateParams, statusFilter, categoryFilter],
+  );
+
+  useFilterPageEffect({ filterKey, page, setPage, load: loadProducts });
 
   useEffect(() => {
     fetchCategories({ limit: 100 })
@@ -92,10 +97,14 @@ function ProductListPage() {
     };
   }, []);
 
+  const applySearch = () => {
+    submitSearch();
+    setPage(1);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    loadProducts();
+    applySearch();
   };
 
   const handleDelete = async () => {
@@ -137,6 +146,7 @@ function ProductListPage() {
               idPrefix="product"
               search={search}
               onSearchChange={setSearch}
+              onSearchSubmit={applySearch}
               searchPlaceholder="Name, SKU, brand, model…"
               period={period}
               onPeriodChange={(v) => {

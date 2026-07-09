@@ -1,5 +1,6 @@
 import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
+import { ModalShell } from '../ui/Modal.jsx';
 
 function QrDisplayModal({ unit, qr, open, onClose }) {
   if (!open) return null;
@@ -9,18 +10,7 @@ function QrDisplayModal({ unit, qr, open, onClose }) {
   const serial = unit?.serialNumber;
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-end justify-center p-stellar-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="qr-modal-title"
-    >
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="Close"
-      />
+    <ModalShell onClose={onClose} aria-labelledby="qr-modal-title" overlayClassName="p-stellar-4">
       <Card variant="elevated" className="relative z-10 w-full max-w-sm !p-stellar-6">
         <h2 id="qr-modal-title" className="text-lg font-semibold text-stellar-text">
           Unit QR code
@@ -48,7 +38,7 @@ function QrDisplayModal({ unit, qr, open, onClose }) {
           </Button>
         </div>
       </Card>
-    </div>
+    </ModalShell>
   );
 }
 

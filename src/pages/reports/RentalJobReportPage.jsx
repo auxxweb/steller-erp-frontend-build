@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -9,6 +9,7 @@ import ReportsNav from '../../components/reports/ReportsNav.jsx';
 import { RentalJobSummaryCards } from '../../components/reports/ReportSummaryCards.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
@@ -35,6 +36,7 @@ function RentalJobReportPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -78,13 +80,12 @@ function RentalJobReportPage() {
     }
   }, [page, dateParams, statusFilter, typeFilter, branchFilter]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter, typeFilter, branchFilter }),
+    [dateParams, statusFilter, typeFilter, branchFilter],
+  );
 
-  useEffect(() => {
-    setPage(1);
-  }, [dateParams, statusFilter, typeFilter, branchFilter]);
+  useFilterPageEffect({ filterKey, page, setPage, load });
 
   useEffect(() => {
     if (!isSuperAdmin) return;
@@ -150,6 +151,7 @@ function RentalJobReportPage() {
           idPrefix="rental-report"
           search={search}
           onSearchChange={setSearch}
+          onSearchSubmit={submitSearch}
           searchPlaceholder="Rental #, customer name or phone…"
           period={period}
           onPeriodChange={setPeriod}

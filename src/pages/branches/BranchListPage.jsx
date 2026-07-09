@@ -1,7 +1,7 @@
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
 import Card from '../../components/ui/Card.jsx';
@@ -16,6 +16,7 @@ import {
 } from '../../services/branchService.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 
 function BranchListPage() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ function BranchListPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -59,16 +61,19 @@ function BranchListPage() {
     }
   }, [page, dateParams, statusFilter]);
 
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter }),
+    [dateParams, statusFilter],
+  );
+
+  useFilterPageEffect({ filterKey, page, setPage, load: loadBranches });
+
   useEffect(() => {
     if (location.state?.message) {
       toast.success(location.state.message);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state?.message, location.pathname, navigate]);
-
-  useEffect(() => {
-    loadBranches();
-  }, [loadBranches]);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,10 +93,14 @@ function BranchListPage() {
     };
   }, []);
 
+  const applySearch = () => {
+    submitSearch();
+    setPage(1);
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPage(1);
-    loadBranches();
+    applySearch();
   };
 
   const handleDelete = async () => {
@@ -136,6 +145,7 @@ function BranchListPage() {
               idPrefix="branch"
               search={search}
               onSearchChange={setSearch}
+              onSearchSubmit={applySearch}
               searchPlaceholder="Name, code, phone, email…"
               period={period}
               onPeriodChange={(v) => {

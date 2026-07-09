@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button.jsx';
 import NumberInput from '../ui/NumberInput.jsx';
 import SearchableSelect from '../ui/SearchableSelect.jsx';
-import QrScanner from '../qr/QrScanner.jsx';
+import QrScanModal from '../qr/QrScanModal.jsx';
 import { fetchProductUnits } from '../../services/productService.js';
 import { verifyQr } from '../../services/qrService.js';
 import { toast } from '../../lib/toastStore.js';
@@ -72,22 +72,28 @@ function RentalProductPicker({
   crossBranch = false,
 }) {
   const [unitsByProduct, setUnitsByProduct] = useState({});
-  const [loadingProduct, setLoadingProduct] = useState(null);
-  const [scanLineIndex, setScanLineIndex] = useState(null);
+  const [loadingProducts, setLoadingProducts] = useState(() => new Set());
+  const [quickScanLineIndex, setQuickScanLineIndex] = useState(null);
 
-  const loadUnits = async (productId) => {
-    if (!productId || unitsByProduct[productId]) return;
-    setLoadingProduct(productId);
+  const loadUnits = async (productId, { force = false } = {}) => {
+    const key = String(productId || '');
+    if (!key || (!force && unitsByProduct[key])) return;
+
+    setLoadingProducts((prev) => new Set(prev).add(key));
     try {
-      const { data } = await fetchProductUnits(productId, { limit: 100 });
+      const { data } = await fetchProductUnits(key, { limit: 100 });
       setUnitsByProduct((prev) => ({
         ...prev,
-        [productId]: data.data.units || [],
+        [key]: data.data.units || [],
       }));
     } catch {
-      setUnitsByProduct((prev) => ({ ...prev, [productId]: [] }));
+      setUnitsByProduct((prev) => ({ ...prev, [key]: [] }));
     } finally {
-      setLoadingProduct(null);
+      setLoadingProducts((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
     }
   };
 
@@ -148,12 +154,52 @@ function RentalProductPicker({
     onChange(lines.filter((_, i) => i !== index));
   };
 
-  const handleQrScan = async (index, value) => {
-    const line = lines[index];
-    if (!line?.product) {
-      toast.error('Select a product before scanning');
-      return;
+  const applyScannedUnitToLine = (index, unit, product) => {
+    const productId = String(product.id);
+    const catId = categoryIdFromRef(product.category);
+    if (!catId) {
+      toast.error('Could not resolve category for this product');
+      return false;
     }
+    if (unit.status !== 'available') {
+      toast.error(`Unit is ${UNIT_STATUS_LABELS[unit.status] || unit.status}`);
+      return false;
+    }
+    if (
+      lines.some(
+        (l, i) => i !== index && l.productUnit && String(l.productUnit) === String(unit.id),
+      )
+    ) {
+      toast.error('This unit is already on the booking');
+      return false;
+    }
+
+    const line = lines[index];
+    const updatedLine = {
+      ...line,
+      category: catId,
+      product: productId,
+      quantity: 1,
+      rateType: line.rateType || 'daily',
+      productUnit: unit.id,
+    };
+
+    setUnitsByProduct((prev) => {
+      const existing = prev[productId] || [];
+      const hasUnit = existing.some((u) => String(u.id) === String(unit.id));
+      return {
+        ...prev,
+        [productId]: hasUnit ? existing : [...existing, unit],
+      };
+    });
+    loadUnits(productId, { force: true });
+    onChange(lines.map((l, i) => (i === index ? updatedLine : l)));
+    toast.success(`${product.name} · ${unit.serialNumber} added`);
+    return true;
+  };
+
+  const handleQuickScanForLine = async (index, value) => {
+    if (index == null || index < 0) return;
     try {
       const { data } = await verifyQr(value.trim());
       const unit = data.data?.unit;
@@ -161,17 +207,17 @@ function RentalProductPicker({
         toast.error('Invalid QR code');
         return;
       }
-      const productId = unit.product?.id || unit.product;
-      if (productId?.toString() !== line.product.toString()) {
-        toast.error('This QR does not match the selected product');
+
+      const productId = String(unit.product?.id || unit.product || '');
+      const product = products.find((p) => String(p.id) === productId);
+      if (!product) {
+        toast.error('Product not found in catalog. It may be inactive or unavailable.');
         return;
       }
-      if (unit.status !== 'available') {
-        toast.error(`Unit is ${UNIT_STATUS_LABELS[unit.status] || unit.status}`);
-        return;
+
+      if (applyScannedUnitToLine(index, unit, product)) {
+        setQuickScanLineIndex(null);
       }
-      updateLine(index, 'productUnit', unit.id);
-      setScanLineIndex(null);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Scan failed'));
     }
@@ -180,19 +226,40 @@ function RentalProductPicker({
   return (
     <div className="space-y-stellar-4">
       <p className="text-sm text-stellar-text-muted">
-        Choose a category, then a product.{' '}
-        {isPrebook
-          ? 'Prebook reserves from the company-wide pool — assign serials at pickup.'
-          : 'Direct rental requires a serial (dropdown or scan the unit QR).'}
+        {isPrebook ? (
+          <>
+            Choose a category, then a product. Prebook reserves from the company-wide pool — assign
+            serials at pickup.
+          </>
+        ) : (
+          <>
+            Use quick scan on each product line, or fill category and product manually. Direct
+            rental requires a serial.
+          </>
+        )}
         {crossBranch && (
           <> Branch labels show where each unit is stored, not who can rent it.</>
         )}
       </p>
 
+      <QrScanModal
+        open={quickScanLineIndex !== null}
+        title={
+          quickScanLineIndex != null
+            ? `Quick scan — product ${quickScanLineIndex + 1}`
+            : 'Quick scan'
+        }
+        hint="Point the camera at a unit QR code. This line will be filled automatically."
+        onClose={() => setQuickScanLineIndex(null)}
+        onScan={(value) => handleQuickScanForLine(quickScanLineIndex, value)}
+      />
+
       {lines.map((line, index) => {
         const categoryProducts = productsForCategory(line.category);
         const product = products.find((p) => String(p.id) === String(line.product));
-        const units = unitsByProduct[line.product] || [];
+        const productKey = line.product ? String(line.product) : '';
+        const units = unitsByProduct[productKey] || [];
+        const isLoadingUnits = productKey ? loadingProducts.has(productKey) : false;
         const showSerialPick = !isPrebook && line.product && Number(line.quantity) === 1;
 
         return (
@@ -200,6 +267,25 @@ function RentalProductPicker({
             key={line.key || index}
             className="space-y-stellar-3 rounded-stellar-lg border border-stellar-border p-stellar-3"
           >
+            {!isPrebook && (
+              <div className="flex flex-col gap-stellar-2 rounded-stellar-md border border-dashed border-stellar-accent/40 bg-stellar-accent/5 p-stellar-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-stellar-text">Quick scan</p>
+                  <p className="mt-stellar-0.5 text-xs text-stellar-text-muted">
+                    Scan a unit QR to auto-fill category, product, quantity, rate, and serial.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setQuickScanLineIndex(index)}
+                >
+                  Scan to add product
+                </Button>
+              </div>
+            )}
+
             <div className="grid gap-stellar-3 sm:grid-cols-12">
               <div className="form-group sm:col-span-4">
                 <SearchableSelect
@@ -266,12 +352,12 @@ function RentalProductPicker({
 
             {showSerialPick && (
               <div className="grid gap-stellar-3 border-t border-stellar-border pt-stellar-3 sm:grid-cols-12">
-                <div className="form-group sm:col-span-6">
+                <div className="form-group sm:col-span-12">
                   <SearchableSelect
                     label="Serial number"
                     value={line.productUnit || ''}
                     onChange={(e) => updateLine(index, 'productUnit', e.target.value)}
-                    disabled={loadingProduct === line.product}
+                    disabled={isLoadingUnits}
                     className="font-mono text-sm"
                     options={withEmptyOption(
                       units.map((u) => ({
@@ -284,27 +370,17 @@ function RentalProductPicker({
                     )}
                     required
                   />
-                  {line.product && !units.length && loadingProduct !== line.product && (
+                  {line.product && isLoadingUnits && (
+                    <p className="mt-stellar-1 text-xs text-stellar-text-muted">Loading serials…</p>
+                  )}
+                  {line.product && !units.length && !isLoadingUnits && (
                     <p className="form-error mt-stellar-1 text-xs">
                       No serial units on {product?.name || 'this product'}. Add units under
                       Products.
                     </p>
                   )}
-                </div>
-
-                <div className="flex flex-col justify-end gap-stellar-2 sm:col-span-6">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setScanLineIndex(scanLineIndex === index ? null : index);
-                    }}
-                  >
-                    {scanLineIndex === index ? 'Close scanner' : 'Scan unit QR'}
-                  </Button>
                   {line.productUnit && (
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    <p className="mt-stellar-1 text-xs text-emerald-600 dark:text-emerald-400">
                       Serial selected
                       {units.find((u) => u.id === line.productUnit)?.serialNumber
                         ? `: ${units.find((u) => u.id === line.productUnit).serialNumber}`
@@ -312,14 +388,6 @@ function RentalProductPicker({
                     </p>
                   )}
                 </div>
-
-                {scanLineIndex === index && (
-                  <div className="sm:col-span-12">
-                    <div className="mx-auto max-w-md">
-                      <QrScanner onScan={(v) => handleQrScan(index, v)} />
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

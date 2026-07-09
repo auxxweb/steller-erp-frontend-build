@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -7,6 +7,7 @@ import RentalHistoryTable from '../../components/customers/RentalHistoryTable.js
 import { fetchCustomerRentals } from '../../services/customerService.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import { RENTAL_STATUS_OPTIONS } from '../../utils/customerConstants.js';
 
 function CustomerRentalsPage() {
@@ -19,6 +20,7 @@ function CustomerRentalsPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -47,9 +49,12 @@ function CustomerRentalsPage() {
     }
   }, [id, page, statusFilter, dateParams]);
 
-  useEffect(() => {
-    loadRentals();
-  }, [loadRentals]);
+  const filterKey = useMemo(
+    () => JSON.stringify({ id, dateParams, statusFilter }),
+    [id, dateParams, statusFilter],
+  );
+
+  useFilterPageEffect({ filterKey, page, setPage, load: loadRentals });
 
   return (
     <CustomerDetailShell customerId={id} toast={location.state?.message}>
@@ -60,6 +65,10 @@ function CustomerRentalsPage() {
               idPrefix="customer-rentals"
               search={search}
               onSearchChange={setSearch}
+              onSearchSubmit={() => {
+                submitSearch();
+                setPage(1);
+              }}
               searchPlaceholder="Rental number…"
               period={period}
               onPeriodChange={(v) => {

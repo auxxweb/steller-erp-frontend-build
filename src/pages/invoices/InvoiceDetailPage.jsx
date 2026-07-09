@@ -62,12 +62,25 @@ function defaultPaymentForm(balanceDue = 0) {
   };
 }
 
+function applyGstPolicyToInvoice(inv, policy) {
+  const next = { ...inv, amounts: mergeInvoiceAmounts(inv) };
+  if (policy?.pricesIncludeGst) {
+    next.amounts = {
+      ...next.amounts,
+      gstEnabled: false,
+      gstRate: policy.gstPercentage ?? next.amounts?.gstRate,
+    };
+  }
+  return next;
+}
+
 function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const basePath = useInvoiceBasePath();
   const { user } = useAuth();
   const [invoice, setInvoice] = useState(null);
+  const [gstPolicy, setGstPolicy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -80,7 +93,14 @@ function InvoiceDetailPage() {
   const hasRecordedPayments = hasInvoiceRecordedPayments(invoice);
   const canEditBillAmount = canEditBillAmountRole && !hasRecordedPayments;
 
-  const amounts = useMemo(() => mergeInvoiceAmounts(invoice), [invoice]);
+  const amounts = useMemo(() => {
+    const merged = mergeInvoiceAmounts(invoice);
+    if (gstPolicy?.pricesIncludeGst && merged) {
+      return { ...merged, gstEnabled: false, gstRate: gstPolicy.gstPercentage ?? merged.gstRate };
+    }
+    return merged;
+  }, [invoice, gstPolicy]);
+  const showGstControls = Boolean(gstPolicy && !gstPolicy.pricesIncludeGst);
   const calculatedLineSubtotal = useMemo(
     () => lineItemsSubtotal(invoice?.lineItems),
     [invoice?.lineItems],
@@ -113,8 +133,9 @@ function InvoiceDetailPage() {
       id,
       buildUpdatePayload(invoice, { includeBillAmount: canEditBillAmount }),
     );
-    const inv = data.data.invoice;
-    const next = { ...inv, amounts: mergeInvoiceAmounts(inv) };
+    const policy = data.data.gstPolicy || gstPolicy;
+    setGstPolicy(policy);
+    const next = applyGstPolicyToInvoice(data.data.invoice, policy);
     setInvoice(next);
     return next;
   };
@@ -123,8 +144,9 @@ function InvoiceDetailPage() {
     setLoading(true);
     try {
       const { data } = await fetchInvoice(id);
-      const inv = data.data.invoice;
-      setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
+      const policy = data.data.gstPolicy || null;
+      setGstPolicy(policy);
+      setInvoice(applyGstPolicyToInvoice(data.data.invoice, policy));
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Invoice not found'));
       navigate(basePath);
@@ -203,8 +225,9 @@ function InvoiceDetailPage() {
         id,
         buildUpdatePayload(invoice, { includeBillAmount: canEditBillAmount }),
       );
-      const inv = data.data.invoice;
-      setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
+      const policy = data.data.gstPolicy || gstPolicy;
+      setGstPolicy(policy);
+      setInvoice(applyGstPolicyToInvoice(data.data.invoice, policy));
       toast.success('Invoice saved');
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Save failed'));
@@ -236,8 +259,9 @@ function InvoiceDetailPage() {
         );
       }
       const { data } = await finalizeInvoice(id);
-      const inv = data.data.invoice;
-      setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
+      const policy = data.data.gstPolicy || gstPolicy;
+      setGstPolicy(policy);
+      setInvoice(applyGstPolicyToInvoice(data.data.invoice, policy));
       toast.success('Job closed — invoice finalized');
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not close job'));
@@ -305,7 +329,8 @@ function InvoiceDetailPage() {
           toast.error(`Payment exceeds balance due (${formatCurrency(due)})`);
           return;
         }
-        let inv;
+        let lastInvoice;
+        let policy = gstPolicy;
         if (cash > 0) {
           const { data } = await recordInvoicePayment(id, {
             amount: cash,
@@ -313,7 +338,8 @@ function InvoiceDetailPage() {
             paidAt,
             notes,
           });
-          inv = data.data.invoice;
+          lastInvoice = data.data.invoice;
+          policy = data.data.gstPolicy || policy;
         }
         if (online > 0) {
           const { data } = await recordInvoicePayment(id, {
@@ -322,9 +348,13 @@ function InvoiceDetailPage() {
             paidAt,
             notes,
           });
-          inv = data.data.invoice;
+          lastInvoice = data.data.invoice;
+          policy = data.data.gstPolicy || policy;
         }
-        setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
+        if (!lastInvoice) return null;
+        setGstPolicy(policy);
+        const inv = applyGstPolicyToInvoice(lastInvoice, policy);
+        setInvoice(inv);
         const nextDue = mergeInvoiceAmounts(inv)?.balanceDue ?? 0;
         resetPaymentForm(nextDue);
         toast.success('Payment recorded');
@@ -346,8 +376,10 @@ function InvoiceDetailPage() {
         paidAt,
         notes,
       });
-      const inv = data.data.invoice;
-      setInvoice({ ...inv, amounts: mergeInvoiceAmounts(inv) });
+      const policy = data.data.gstPolicy || gstPolicy;
+      setGstPolicy(policy);
+      const inv = applyGstPolicyToInvoice(data.data.invoice, policy);
+      setInvoice(inv);
       const nextDue = mergeInvoiceAmounts(inv)?.balanceDue ?? 0;
       resetPaymentForm(nextDue);
       toast.success('Payment recorded');
@@ -422,7 +454,7 @@ function InvoiceDetailPage() {
         </div>
       </div>
 
-      <InvoiceDocumentPreview invoice={{ ...invoice, amounts }} />
+      <InvoiceDocumentPreview invoice={{ ...invoice, amounts }} gstPolicy={gstPolicy} />
 
       {(editable || (showRecordPayment && balanceDue > 0)) && (
         <Card className="!p-stellar-5 space-y-stellar-6">
@@ -535,16 +567,22 @@ function InvoiceDetailPage() {
               />
             </div>
             <div className="flex items-end pb-1">
-              <label className="flex items-center gap-stellar-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={amounts.gstEnabled !== false}
-                  onChange={(e) => patchAmountField('gstEnabled', e.target.checked)}
-                />
-                Apply GST ({amounts.gstRate ?? 18}%)
-              </label>
+              {showGstControls ? (
+                <label className="flex items-center gap-stellar-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={amounts.gstEnabled !== false}
+                    onChange={(e) => patchAmountField('gstEnabled', e.target.checked)}
+                  />
+                  Apply GST ({amounts.gstRate ?? gstPolicy?.gstPercentage ?? 18}%)
+                </label>
+              ) : (
+                <p className="text-sm text-stellar-text-muted">
+                  Rental prices are GST-inclusive. No additional GST is applied on this invoice.
+                </p>
+              )}
             </div>
-            {amounts.gstEnabled !== false && (
+            {showGstControls && amounts.gstEnabled !== false && (
               <div>
                 <label className="form-label">GST %</label>
                 <NumberInput

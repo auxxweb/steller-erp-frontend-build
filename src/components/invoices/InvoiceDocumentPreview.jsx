@@ -2,7 +2,7 @@ import stellerLogo from '../../assets/steller-logo-full.png';
 import { INVOICE_PAYMENT_LABELS } from '../../utils/invoiceConstants.js';
 import { formatCurrency, formatDate } from '../../utils/format.js';
 
-function InvoiceDocumentPreview({ invoice }) {
+function InvoiceDocumentPreview({ invoice, gstPolicy }) {
   const biz = invoice.businessSnapshot || {};
   const logoSrc = biz.logoUrl?.trim() || stellerLogo;
   const useDefaultLogo = !biz.logoUrl?.trim();
@@ -109,6 +109,11 @@ function InvoiceDocumentPreview({ invoice }) {
           <div className="flex justify-between">
             <dt>GST ({amounts.gstRate}%)</dt>
             <dd>{formatCurrency(amounts.tax)}</dd>
+          </div>
+        ) : gstPolicy?.pricesIncludeGst ? (
+          <div className="flex justify-between text-stellar-text-muted">
+            <dt>GST</dt>
+            <dd>Included in price</dd>
           </div>
         ) : null}
         <div className="flex justify-between font-bold">

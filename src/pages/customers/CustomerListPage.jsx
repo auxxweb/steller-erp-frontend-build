@@ -1,7 +1,7 @@
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -10,6 +10,7 @@ import CustomerFilters from '../../components/customers/CustomerFilters.jsx';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import Button from '../../components/ui/Button.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import CustomerStatsCards from '../../components/customers/CustomerStatsCards.jsx';
 import DeleteCustomerModal from '../../components/customers/DeleteCustomerModal.jsx';
 import useCustomerBasePath, { useCanManageCustomers } from '../../hooks/useCustomerBasePath.js';
@@ -32,6 +33,7 @@ function CustomerListPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -67,9 +69,12 @@ function CustomerListPage() {
     }
   }, [page, dateParams, statusFilter, typeFilter, riskFilter]);
 
-  useEffect(() => {
-    loadCustomers();
-  }, [loadCustomers]);
+  const filterKey = useMemo(
+    () => JSON.stringify({ dateParams, statusFilter, typeFilter, riskFilter }),
+    [dateParams, statusFilter, typeFilter, riskFilter],
+  );
+
+  useFilterPageEffect({ filterKey, page, setPage, load: loadCustomers });
 
   useEffect(() => {
     let cancelled = false;
@@ -87,10 +92,14 @@ function CustomerListPage() {
     };
   }, []);
 
+  const applySearch = () => {
+    submitSearch();
+    setPage(1);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    loadCustomers();
+    applySearch();
   };
 
   const handleDelete = async () => {
@@ -134,6 +143,7 @@ function CustomerListPage() {
               idPrefix="customer"
               search={search}
               onSearchChange={setSearch}
+              onSearchSubmit={applySearch}
               searchPlaceholder="Name, phone, email, company…"
               period={period}
               onPeriodChange={(v) => {

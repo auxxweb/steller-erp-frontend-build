@@ -1,61 +1,40 @@
-import { useCallback, useEffect, useState } from 'react';
 import Card from '../../components/ui/Card.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalTable from '../../components/rentals/RentalTable.jsx';
+import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
-import { fetchRentals } from '../../services/rentalService.js';
-import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
-import useListFilters from '../../hooks/useListFilters.js';
+import useRentalList from '../../hooks/useRentalList.js';
 import { ACTIVE_RENTAL_STATUSES } from '../../utils/rentalConstants.js';
 
 function RentalActivePage() {
   const basePath = useRentalBasePath();
-  const [rentals, setRentals] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('');
+
   const {
+    rentals,
+    pagination,
+    page,
+    setPage,
+    loading,
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
     setDateFrom,
     dateTo,
     setDateTo,
-    dateParams,
-  } = useListFilters();
-  const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = {
-        page,
-        limit: 10,
-        sortBy: 'scheduledEndAt',
-        sortOrder: 'asc',
-      };
-      if (statusFilter) {
-        params.status = statusFilter;
-      } else {
-        params.status = ACTIVE_RENTAL_STATUSES.join(',');
-      }
-      Object.assign(params, dateParams);
-      const { data } = await fetchRentals(params);
-      setRentals(data.data.rentals);
-      setPagination(data.data.pagination);
-    } catch {
-      setRentals([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, statusFilter, dateParams]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+    statusFilter,
+    setStatusFilter,
+    resetPage,
+  } = useRentalList({
+    defaultStatuses: ACTIVE_RENTAL_STATUSES,
+    sortBy: 'scheduledEndAt',
+    sortOrder: 'asc',
+    limit: 15,
+    dateField: 'scheduledEndAt',
+  });
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
@@ -70,44 +49,30 @@ function RentalActivePage() {
 
       <Card className="!p-0 overflow-hidden">
         <div className="border-b border-stellar-border p-stellar-4">
-          <ListFiltersBar
+          <RentalListFilters
             idPrefix="rental-active"
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Rental number or notes…"
+            onSearchSubmit={() => {
+              submitSearch();
+              resetPage();
+            }}
             period={period}
             onPeriodChange={(v) => {
               setPeriod(v);
-              setPage(1);
+              resetPage();
             }}
             dateFrom={dateFrom}
             dateTo={dateTo}
             onDateFromChange={setDateFrom}
             onDateToChange={setDateTo}
-            showSubmit={false}
-          >
-            <div className="form-group">
-              <label htmlFor="active-status" className="form-label">
-                Status
-              </label>
-              <select
-                id="active-status"
-                className="input w-full"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">All active</option>
-                {ACTIVE_RENTAL_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace(/_/g, ' ')}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </ListFiltersBar>
+            statusFilter={statusFilter}
+            onStatusChange={(v) => {
+              setStatusFilter(v);
+              resetPage();
+            }}
+            allStatusLabel="All active"
+          />
         </div>
         <RentalTable rentals={rentals} loading={loading} basePath={basePath} />
         <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />

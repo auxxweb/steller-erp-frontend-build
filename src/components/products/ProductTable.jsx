@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import ProductStatusBadge from './ProductStatusBadge.jsx';
 
@@ -179,4 +180,4 @@ function ProductTable({ products, loading, basePath, canManage, onDelete }) {
   );
 }
 
-export default ProductTable;
+export default memo(ProductTable);

@@ -142,6 +142,12 @@ function CustomerProfilePage() {
                       {formatMoney(customer.outstandingBalance ?? 0)}
                     </dd>
                   </div>
+                  <div className="flex justify-between gap-stellar-4">
+                    <dt className="text-stellar-text-muted">Cancelled pre-bookings</dt>
+                    <dd className="font-medium tabular-nums">
+                      {customer.cancelledPrebookings ?? 0}
+                    </dd>
+                  </div>
                 </dl>
                 {customer.address?.line1 && (
                   <div className="mt-stellar-4 border-t border-stellar-border pt-stellar-4">

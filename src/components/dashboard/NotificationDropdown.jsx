@@ -23,6 +23,7 @@ function NotificationDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const panelRef = useRef(null);
+  const lastFetchAtRef = useRef(0);
 
   const loadNotifications = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -33,6 +34,7 @@ function NotificationDropdown() {
       );
       setItems(data.data.notifications);
       setUnreadCount(data.data.unreadCount);
+      lastFetchAtRef.current = Date.now();
     } catch {
       setItems([]);
     } finally {
@@ -47,7 +49,9 @@ function NotificationDropdown() {
   }, [loadNotifications]);
 
   useEffect(() => {
-    if (open) loadNotifications({ silent: true });
+    if (!open) return;
+    if (Date.now() - lastFetchAtRef.current < 30_000) return;
+    loadNotifications({ silent: true });
   }, [open, loadNotifications]);
 
   useEffect(() => {

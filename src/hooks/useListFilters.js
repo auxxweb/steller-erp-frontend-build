@@ -1,31 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { buildDatePeriodParams } from '../utils/listQueryParams.js';
 
 /**
  * Shared search + date period state for list pages.
- * Search is debounced before it enters `dateParams` to avoid API storms on keystroke.
+ * Text search is applied only when `submitSearch()` is called (search icon / Enter).
  */
-export function useListFilters({ initialSearch = '', searchDebounceMs = 350 } = {}) {
+export function useListFilters({ initialSearch = '' } = {}) {
   const [search, setSearch] = useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+  const [appliedSearch, setAppliedSearch] = useState(initialSearch);
   const [period, setPeriod] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), searchDebounceMs);
-    return () => window.clearTimeout(timer);
-  }, [search, searchDebounceMs]);
+  const submitSearch = useCallback(() => {
+    setAppliedSearch(search.trim());
+  }, [search]);
 
   const dateParams = useMemo(
-    () => buildDatePeriodParams({ search: debouncedSearch, period, dateFrom, dateTo }),
-    [debouncedSearch, period, dateFrom, dateTo],
+    () => buildDatePeriodParams({ search: appliedSearch, period, dateFrom, dateTo }),
+    [appliedSearch, period, dateFrom, dateTo],
   );
 
   return {
     search,
     setSearch,
-    debouncedSearch,
+    appliedSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,

@@ -395,7 +395,7 @@ function BranchTeamPage() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [roleFilter, setRoleFilter] = useState('');
-  const { search, setSearch, period, setPeriod, dateFrom, setDateFrom, dateTo, setDateTo, dateParams } =
+  const { search, setSearch, submitSearch, period, setPeriod, dateFrom, setDateFrom, dateTo, setDateTo, dateParams } =
     useListFilters();
 
   const loadTeam = useCallback(async () => {
@@ -451,6 +451,7 @@ function BranchTeamPage() {
       <ListFiltersBar
         search={search}
         onSearchChange={setSearch}
+        onSearchSubmit={submitSearch}
         searchPlaceholder="Search name, email, phone, employee ID…"
         period={period}
         onPeriodChange={setPeriod}

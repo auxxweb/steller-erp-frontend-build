@@ -2,50 +2,65 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
+import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import RentalQueuePicker from '../../components/rentals/RentalQueuePicker.jsx';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 import RentalQrChecklist from '../../components/rentals/RentalQrChecklist.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
-import { fetchRentals, fetchRental, pickupRental } from '../../services/rentalService.js';
-import { PICKUP_STATUSES, RENTAL_STATUS, RENTAL_TYPE } from '../../utils/rentalConstants.js';
+import useRentalList from '../../hooks/useRentalList.js';
+import { fetchRental, pickupRental } from '../../services/rentalService.js';
+import {
+  PICKUP_STATUSES,
+  PREBOOK_PICKUP_QUEUE_STATUSES,
+  RENTAL_STATUS,
+  RENTAL_STATUS_OPTIONS,
+  RENTAL_TYPE,
+} from '../../utils/rentalConstants.js';
 import { formatDate } from '../../utils/format.js';
+
+const PICKUP_STATUS_OPTIONS = RENTAL_STATUS_OPTIONS.filter((opt) =>
+  PREBOOK_PICKUP_QUEUE_STATUSES.includes(opt.value),
+);
 
 function RentalPickupPage() {
   const basePath = useRentalBasePath();
-  const [queue, setQueue] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [detail, setDetail] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [scansReady, setScansReady] = useState(false);
   const [unitAssignments, setUnitAssignments] = useState([]);
 
-  const loadQueue = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await fetchRentals({
-        status: PICKUP_STATUSES.join(','),
-        rentalType: RENTAL_TYPE.PREBOOK,
-        limit: 50,
-        sortBy: 'scheduledStartAt',
-        sortOrder: 'asc',
-      });
-      setQueue(
-        (data.data.rentals || []).filter((r) => r.rentalType === RENTAL_TYPE.PREBOOK),
-      );
-    } catch {
-      setQueue([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadQueue();
-  }, [loadQueue]);
+  const {
+    rentals: queue,
+    pagination,
+    page,
+    setPage,
+    loading,
+    search,
+    setSearch,
+    submitSearch,
+    period,
+    setPeriod,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    statusFilter,
+    setStatusFilter,
+    resetPage,
+    reload,
+  } = useRentalList({
+    defaultStatuses: PREBOOK_PICKUP_QUEUE_STATUSES,
+    rentalType: RENTAL_TYPE.PREBOOK,
+    sortBy: 'scheduledStartAt',
+    sortOrder: 'asc',
+    limit: 15,
+    dateField: 'scheduledStartAt',
+  });
 
   useEffect(() => {
     setUnitAssignments([]);
@@ -86,7 +101,7 @@ function RentalPickupPage() {
       toast.success(data.message || 'Pickup completed');
       setSelectedId('');
       setDetail(null);
-      loadQueue();
+      reload();
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Pickup failed'));
     } finally {
@@ -107,17 +122,44 @@ function RentalPickupPage() {
       <RentalNav />
 
       <div className="grid gap-stellar-6 lg:grid-cols-5">
-        <Card className="!p-stellar-5 lg:col-span-2">
-          <h2 className="mb-stellar-4 text-sm font-semibold text-stellar-text">Pickup queue</h2>
+        <Card className="!p-stellar-5 lg:col-span-2 space-y-stellar-4">
+          <h2 className="text-sm font-semibold text-stellar-text">Pickup queue</h2>
+          <RentalListFilters
+            idPrefix="rental-pickup"
+            search={search}
+            onSearchChange={setSearch}
+            onSearchSubmit={() => {
+              submitSearch();
+              resetPage();
+            }}
+            period={period}
+            onPeriodChange={(v) => {
+              setPeriod(v);
+              resetPage();
+            }}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            statusFilter={statusFilter}
+            onStatusChange={(v) => {
+              setStatusFilter(v);
+              resetPage();
+            }}
+            statusOptions={PICKUP_STATUS_OPTIONS}
+            allStatusLabel="All pickup statuses"
+          />
           <RentalQueuePicker
             rentals={queue}
             selectedId={selectedId}
             onSelect={setSelectedId}
             loading={loading}
-            emptyMessage="No prebook pickups pending."
+            emptyMessage="No prebook bookings found."
             dateField="scheduledStartAt"
             dateLabel="Pickup"
+            hideSearch
           />
+          <PaginationBar pagination={pagination} page={page} onPageChange={setPage} />
         </Card>
 
         <div className="lg:col-span-3">

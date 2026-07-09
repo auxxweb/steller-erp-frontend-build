@@ -41,7 +41,7 @@ async function fetchAllCatalogUnits(params) {
 function QrCodesAdminPage() {
   const [units, setUnits] = useState([]);
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,16 +53,15 @@ function QrCodesAdminPage() {
       .catch(() => setBranches([]));
   }, []);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), 350);
-    return () => window.clearTimeout(timer);
-  }, [search]);
+  const submitSearch = () => {
+    setAppliedSearch(search.trim());
+  };
 
   const loadUnits = useCallback(async () => {
     setLoading(true);
     try {
       const list = await fetchAllCatalogUnits({
-        search: debouncedSearch.trim() || undefined,
+        search: appliedSearch || undefined,
         branch: branchFilter || undefined,
       });
       setUnits(list);
@@ -72,7 +71,7 @@ function QrCodesAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, branchFilter]);
+  }, [appliedSearch, branchFilter]);
 
   useEffect(() => {
     loadUnits();
@@ -84,7 +83,7 @@ function QrCodesAdminPage() {
     setBulkLoading(true);
     try {
       const { data } = await downloadQrCatalogBulkZip({
-        search: search.trim() || undefined,
+        search: appliedSearch || undefined,
         branch: branchFilter || undefined,
         max: Math.max(units.length, 500),
       });
@@ -123,6 +122,7 @@ function QrCodesAdminPage() {
           idPrefix="qr-catalog"
           search={search}
           onSearchChange={setSearch}
+          onSearchSubmit={submitSearch}
           searchPlaceholder="Search serial number…"
           showDateFilters={false}
           showSubmit={false}

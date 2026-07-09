@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -8,6 +8,7 @@ import { fetchBranches } from '../../services/branchService.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
+import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import { INVOICE_STATUS_LABELS } from '../../utils/invoiceConstants.js';
 import { formatCurrency, formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
@@ -30,6 +31,7 @@ function InvoiceListPage() {
   const {
     search,
     setSearch,
+    submitSearch,
     period,
     setPeriod,
     dateFrom,
@@ -43,7 +45,6 @@ function InvoiceListPage() {
     () => JSON.stringify({ dateParams, statusFilter, branchFilter }),
     [dateParams, statusFilter, branchFilter],
   );
-  const prevFilterKey = useRef(filterKey);
 
   useEffect(() => {
     if (!isSuperAdmin) return;
@@ -73,16 +74,7 @@ function InvoiceListPage() {
     }
   }, [page, dateParams, statusFilter, branchFilter]);
 
-  useEffect(() => {
-    if (prevFilterKey.current !== filterKey) {
-      prevFilterKey.current = filterKey;
-      if (page !== 1) {
-        setPage(1);
-        return;
-      }
-    }
-    load();
-  }, [filterKey, page, load]);
+  useFilterPageEffect({ filterKey, page, setPage, load });
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
@@ -100,6 +92,10 @@ function InvoiceListPage() {
           idPrefix="invoice"
           search={search}
           onSearchChange={setSearch}
+          onSearchSubmit={() => {
+            submitSearch();
+            setPage(1);
+          }}
           searchPlaceholder="Customer name or invoice number"
           period={period}
           onPeriodChange={setPeriod}
