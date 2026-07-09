@@ -1,0 +1,1 @@
+import{s as e}from"./Card-D7Si8CNI.js";e();var t={SUPER_ADMIN:`super_admin`,BRANCH_ADMIN:`branch_admin`,EMPLOYEE:`employee`},n={[t.SUPER_ADMIN]:`Super Admin`,[t.BRANCH_ADMIN]:`Branch Admin`,[t.EMPLOYEE]:`Employee`};export{n,t};

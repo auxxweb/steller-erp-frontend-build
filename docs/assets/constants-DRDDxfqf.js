@@ -1,1 +1,0 @@
-import{o as e}from"./api-Ct1BQt_W.js";e();var t={SUPER_ADMIN:`super_admin`,BRANCH_ADMIN:`branch_admin`,EMPLOYEE:`employee`},n={[t.SUPER_ADMIN]:`Super Admin`,[t.BRANCH_ADMIN]:`Branch Admin`,[t.EMPLOYEE]:`Employee`};export{n,t};

@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-react-DlW_TQ7p.js";import{a as t}from"./Card-D7Si8CNI.js";import{E as n}from"./customerService-BWYAziOB.js";var r=e();function i({level:e,className:i}){let a=n[e]||n.medium;return(0,r.jsxs)(`span`,{className:t(`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`,a.badgeClass,i),children:[a.label,` risk`]})}export{i as t};
