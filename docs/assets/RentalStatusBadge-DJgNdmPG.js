@@ -1,1 +1,0 @@
-import{t as e}from"./vendor-react-DlW_TQ7p.js";import{i as t}from"./api-Ct1BQt_W.js";import{a as n}from"./rentalConstants-By8dfc7M.js";var r=e();function i({status:e,className:i}){let a=n[e]||n.draft;return(0,r.jsx)(`span`,{className:t(`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`,a.className,i),children:a.label})}export{i as t};

@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-QTnfLwEv.js";import{s as t}from"./vendor-B8Rj4xHc.js";var n=e(t(),1);function r({filterKey:e,page:t,setPage:r,load:i}){let a=(0,n.useRef)(e);(0,n.useEffect)(()=>{if(a.current!==e&&(a.current=e,t!==1)){r(1);return}i()},[e,t,r,i])}export{r as t};
