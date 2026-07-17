@@ -3,7 +3,7 @@ import Button from '../ui/Button.jsx';
 import NumberInput from '../ui/NumberInput.jsx';
 import SearchableSelect from '../ui/SearchableSelect.jsx';
 import QrScanModal from '../qr/QrScanModal.jsx';
-import { fetchProductUnits } from '../../services/productService.js';
+import { fetchProduct, fetchProductUnits } from '../../services/productService.js';
 import { verifyQr } from '../../services/qrService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
@@ -68,6 +68,7 @@ function RentalProductPicker({
   products = [],
   lines,
   onChange,
+  onProductDiscovered,
   isPrebook = false,
   crossBranch = false,
 }) {
@@ -198,6 +199,20 @@ function RentalProductPicker({
     return true;
   };
 
+  const resolveProductForScan = async (productId) => {
+    const cached = products.find((p) => String(p.id) === productId);
+    if (cached) return cached;
+
+    const { data } = await fetchProduct(productId);
+    const product = data.data?.product;
+    if (!product) return null;
+    if (product.status && product.status !== 'active') {
+      throw new Error('Product is inactive and cannot be added to a rental.');
+    }
+    onProductDiscovered?.(product);
+    return product;
+  };
+
   const handleQuickScanForLine = async (index, value) => {
     if (index == null || index < 0) return;
     try {
@@ -209,9 +224,21 @@ function RentalProductPicker({
       }
 
       const productId = String(unit.product?.id || unit.product || '');
-      const product = products.find((p) => String(p.id) === productId);
+      if (!productId) {
+        toast.error('Scanned unit is not linked to a product.');
+        return;
+      }
+
+      let product;
+      try {
+        product = await resolveProductForScan(productId);
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, 'Product not found in catalog.'));
+        return;
+      }
+
       if (!product) {
-        toast.error('Product not found in catalog. It may be inactive or unavailable.');
+        toast.error('Product not found in catalog.');
         return;
       }
 

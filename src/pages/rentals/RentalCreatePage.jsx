@@ -20,7 +20,7 @@ import { createCustomer, lookupCustomerIdentity } from '../../services/customerS
 import RentalCustomerPicker, {
   RENTAL_CUSTOMER_MODES,
 } from '../../components/rentals/RentalCustomerPicker.jsx';
-import { fetchProducts } from '../../services/productService.js';
+import { fetchAllProducts } from '../../services/productService.js';
 import { fetchCategories } from '../../services/categoryService.js';
 import { fetchCombos, fetchComboPrice } from '../../services/comboService.js';
 import { checkRentalAvailability, createRental } from '../../services/rentalService.js';
@@ -100,8 +100,8 @@ function RentalCreatePage() {
   }, [rentalType]);
 
   useEffect(() => {
-    fetchProducts({ limit: 100, status: 'active' })
-      .then(({ data }) => setProducts(data.data.products))
+    fetchAllProducts({ status: 'active' })
+      .then(setProducts)
       .catch(() => setProducts([]));
     if (isSuperAdmin) {
       fetchBranches({ limit: 100 })
@@ -118,6 +118,14 @@ function RentalCreatePage() {
       .then(({ data }) => setCombos(data.data.combos))
       .catch(() => setCombos([]));
   }, [isSuperAdmin, branch, effectiveBranchId]);
+
+  const handleProductDiscovered = (product) => {
+    if (!product?.id) return;
+    setProducts((prev) => {
+      if (prev.some((p) => String(p.id) === String(product.id))) return prev;
+      return [...prev, product];
+    });
+  };
 
   const selectedCombo = combos.find((c) => c.id === comboId);
   const selectedComboItems = selectedCombo?.items || [];
@@ -588,6 +596,7 @@ function RentalCreatePage() {
                 products={products}
                 lines={lines}
                 onChange={setLines}
+                onProductDiscovered={handleProductDiscovered}
                 isPrebook={isPrebook}
                 crossBranch
               />

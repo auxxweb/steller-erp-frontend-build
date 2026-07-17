@@ -5,6 +5,28 @@ export const fetchInventoryStats = (params) =>
 
 export const fetchProducts = (params) => api.get('/products', { params });
 
+const CATALOG_PAGE_SIZE = 100;
+
+/** Load every page of products (API caps at 100 per page). */
+export async function fetchAllProducts(params = {}) {
+  const all = [];
+  let page = 1;
+  let pages = 1;
+
+  do {
+    const { data } = await fetchProducts({
+      ...params,
+      page,
+      limit: CATALOG_PAGE_SIZE,
+    });
+    all.push(...(data.data.products || []));
+    pages = data.data.pagination?.pages || 1;
+    page += 1;
+  } while (page <= pages);
+
+  return all;
+}
+
 export const fetchProduct = (id) => api.get(`/products/${id}`);
 
 export const fetchProductAvailability = (id) => api.get(`/products/${id}/availability`);
