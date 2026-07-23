@@ -12,7 +12,7 @@ import {
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 
 function formatMoney(val) {
-  if (val == null || val === '' || Number(val) === 0) return '—';
+  if (val == null || val === '') return '—';
   return `₹${Number(val).toLocaleString('en-IN')}`;
 }
 
@@ -125,7 +125,8 @@ function ComboForm({
         <Card.Header>
           <Card.Title>Products & pricing</Card.Title>
           <Card.Description>
-            Set rental rates for each product. Combo totals are calculated automatically.
+            Set rental rates for each product (0 is allowed). Leave blank if unused. Combo totals
+            are calculated automatically.
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-stellar-4">

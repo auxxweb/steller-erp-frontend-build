@@ -14,6 +14,8 @@ export function useRentalList({
   limit = 15,
   initialStatus = '',
   dateField = 'createdAt',
+  requireStarted = false,
+  awaitingPickup = false,
 } = {}) {
   const [rentals, setRentals] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
@@ -46,8 +48,20 @@ export function useRentalList({
         sortBy,
         sortOrder,
         dateField,
+        requireStarted,
+        awaitingPickup,
       }),
-    [dateParams, statusFilter, defaultStatusKey, rentalType, sortBy, sortOrder, dateField],
+    [
+      dateParams,
+      statusFilter,
+      defaultStatusKey,
+      rentalType,
+      sortBy,
+      sortOrder,
+      dateField,
+      requireStarted,
+      awaitingPickup,
+    ],
   );
 
   const load = useCallback(async () => {
@@ -67,6 +81,8 @@ export function useRentalList({
       }
       if (rentalType) params.rentalType = rentalType;
       if (dateField) params.dateField = dateField;
+      if (requireStarted) params.requireStarted = true;
+      if (awaitingPickup) params.awaitingPickup = true;
 
       const { data } = await fetchRentals(params);
       setRentals(data.data.rentals || []);
@@ -77,7 +93,19 @@ export function useRentalList({
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, dateParams, defaultStatusKey, rentalType, sortBy, sortOrder, limit, dateField]);
+  }, [
+    page,
+    statusFilter,
+    dateParams,
+    defaultStatusKey,
+    rentalType,
+    sortBy,
+    sortOrder,
+    limit,
+    dateField,
+    requireStarted,
+    awaitingPickup,
+  ]);
 
   useFilterPageEffect({ filterKey, page, setPage, load });
 

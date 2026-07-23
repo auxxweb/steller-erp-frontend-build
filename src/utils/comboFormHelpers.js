@@ -7,20 +7,23 @@ export function normalizeItemPricing(pricing = {}) {
   const out = {};
   RATE_FIELDS.forEach((field) => {
     const val = pricing[field];
-    if (val !== '' && val != null) out[field] = Number(val);
+    if (val === '' || val == null) return;
+    const n = Number(val);
+    if (!Number.isNaN(n) && n >= 0) out[field] = n;
   });
   return out;
 }
 
-/** Sum item rates × quantity into combo-level totals. */
+/** Sum item rates × quantity into combo-level totals (includes explicit 0). */
 export function aggregateComboPricingFromItems(items = []) {
   const totals = { dailyRate: 0, weeklyRate: 0, monthlyRate: 0 };
   for (const entry of items) {
     const qty = Math.max(1, Number(entry.quantity) || 1);
     const p = entry.pricing || {};
     RATE_FIELDS.forEach((key) => {
+      if (p[key] === '' || p[key] == null) return;
       const val = Number(p[key]);
-      if (!Number.isNaN(val) && val > 0) totals[key] += val * qty;
+      if (!Number.isNaN(val) && val >= 0) totals[key] += val * qty;
     });
   }
   return totals;
@@ -86,13 +89,6 @@ export function formToPayload(values) {
 
   if (!items.length) {
     throw new Error('At least one product is required');
-  }
-
-  const hasRates = items.every((item) =>
-    RATE_FIELDS.some((key) => Number(item.pricing?.[key]) > 0),
-  );
-  if (!hasRates) {
-    throw new Error('Each product needs at least one rental rate (daily, weekly, or monthly)');
   }
 
   const pricing = aggregateComboPricingFromItems(items);

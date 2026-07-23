@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useInvoiceRedirect } from '../../hooks/useInvoiceRedirect.js';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -7,7 +7,7 @@ import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import RentalTimeline from '../../components/rentals/RentalTimeline.jsx';
 import useRentalBasePath, { useCanOperateRentals } from '../../hooks/useRentalBasePath.js';
-import { cancelRental, fetchRental } from '../../services/rentalService.js';
+import { cancelRental, fetchRental, reserveRental } from '../../services/rentalService.js';
 import { RENTAL_STATUS, RENTAL_TYPE } from '../../utils/rentalConstants.js';
 import { formatUnitSerialLabel } from '../../utils/productConstants.js';
 import { formatDate } from '../../utils/format.js';
@@ -22,6 +22,7 @@ function formatMoney(val) {
 function RentalDetailPage() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const basePath = useRentalBasePath();
   const { canOpenInvoice, invoiceBasePath } = useInvoiceRedirect();
   const canOperate = useCanOperateRentals();
@@ -30,6 +31,7 @@ function RentalDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [reserving, setReserving] = useState(false);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -73,10 +75,46 @@ function RentalDetailPage() {
   const { rental, items = [] } = data;
   const status = rental.status;
   const isPrebook = rental.rentalType === RENTAL_TYPE.PREBOOK;
+  const canReserveDraft = status === RENTAL_STATUS.DRAFT && canOperate;
+  const canGoToPickup =
+    isPrebook &&
+    [RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED, RENTAL_STATUS.OVERDUE].includes(
+      status,
+    ) &&
+    !rental.actualStartAt &&
+    !rental.pickedUpAt &&
+    canOperate;
   const canCancelPrebook =
     isPrebook &&
-    [RENTAL_STATUS.DRAFT, RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(status) &&
+    [
+      RENTAL_STATUS.DRAFT,
+      RENTAL_STATUS.RESERVED,
+      RENTAL_STATUS.CONFIRMED,
+      RENTAL_STATUS.OVERDUE,
+    ].includes(status) &&
+    !rental.actualStartAt &&
+    !rental.pickedUpAt &&
     canOperate;
+
+  const handleReserve = async () => {
+    setReserving(true);
+    try {
+      await reserveRental(id);
+      toast.success(
+        isPrebook
+          ? 'Inventory reserved — you can proceed to pickup'
+          : 'Inventory reserved',
+      );
+      await load();
+      if (isPrebook) {
+        navigate(`${basePath}/pickup`, { state: { selectedId: id } });
+      }
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to reserve inventory'));
+    } finally {
+      setReserving(false);
+    }
+  };
 
   const handleCancelPrebook = async () => {
     const reason = window.prompt('Reason for cancelling this pre-booking?');
@@ -109,21 +147,40 @@ function RentalDetailPage() {
             {rental.customer?.name} · {rental.customer?.phone}
             {isPrebook ? ' · Prebook' : ' · Direct rental'}
           </p>
+          {status === RENTAL_STATUS.DRAFT && (
+            <p className="mt-stellar-2 text-sm text-amber-700 dark:text-amber-400">
+              This booking is still a draft — inventory is not locked. Reserve inventory to continue
+              {isPrebook ? ' to pickup' : ''}.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-stellar-2">
-          {isPrebook &&
-            [RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(status) &&
-            canOperate && (
-              <Link to={`${basePath}/pickup`} className="btn btn-primary btn-md">
-                Go to pickup
-              </Link>
-            )}
+          {canReserveDraft && (
+            <Button
+              type="button"
+              variant="primary"
+              className="btn-md"
+              disabled={reserving || cancelling}
+              onClick={handleReserve}
+            >
+              {reserving ? 'Reserving…' : 'Reserve inventory'}
+            </Button>
+          )}
+          {canGoToPickup && (
+            <Link
+              to={`${basePath}/pickup`}
+              state={{ selectedId: id }}
+              className="btn btn-primary btn-md"
+            >
+              Go to pickup
+            </Link>
+          )}
           {canCancelPrebook && (
             <Button
               type="button"
               variant="danger"
               className="btn-md"
-              disabled={cancelling}
+              disabled={cancelling || reserving}
               onClick={handleCancelPrebook}
             >
               {cancelling ? 'Cancelling…' : 'Cancel pre-booking'}
@@ -135,6 +192,7 @@ function RentalDetailPage() {
             RENTAL_STATUS.PICKED_UP,
             RENTAL_STATUS.PARTIALLY_RETURNED,
           ].includes(status) &&
+            (rental.actualStartAt || rental.pickedUpAt) &&
             canOperate && (
               <Link to={`${basePath}/return`} className="btn btn-primary btn-md">
                 Go to return

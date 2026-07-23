@@ -1,5 +1,5 @@
 function formatMoney(val) {
-  if (val == null) return '—';
+  if (val == null || val === '') return '—';
   return `₹${Number(val).toLocaleString('en-IN')}`;
 }
 
@@ -47,14 +47,19 @@ function ComboPricingPanel({ pricing, loading }) {
 
       {pricing.lines?.length > 0 && (
         <ul className="divide-y divide-stellar-border rounded-stellar-lg border border-stellar-border text-sm">
-          {pricing.lines.map((line) => (
+          {pricing.lines.map((line, index) => (
             <li
-              key={line.productId}
+              key={`${line.source || 'line'}-${line.productId}-${index}`}
               className="flex flex-col gap-stellar-1 p-stellar-3 sm:flex-row sm:justify-between"
             >
               <span>
                 {line.productName || line.productId}
                 <span className="text-stellar-text-muted"> × {line.quantity}</span>
+                {line.source === 'extra' ? (
+                  <span className="ml-stellar-1 text-[10px] uppercase text-stellar-text-muted">
+                    extra
+                  </span>
+                ) : null}
               </span>
               <span className="tabular-nums text-stellar-text-muted">
                 {formatMoney(line.lineSubtotal)}

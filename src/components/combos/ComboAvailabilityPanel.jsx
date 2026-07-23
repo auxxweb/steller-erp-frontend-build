@@ -40,6 +40,9 @@ function ComboAvailabilityPanel({ availability, loading }) {
                 Need {item.requiredPerCombo}/set · {item.availableCount} free ·{' '}
                 {item.combosPossible ?? 0} combos possible
               </span>
+              {!item.isAvailable && item.error ? (
+                <span className="text-xs text-red-600 sm:basis-full">{item.error}</span>
+              ) : null}
             </li>
           ))}
         </ul>

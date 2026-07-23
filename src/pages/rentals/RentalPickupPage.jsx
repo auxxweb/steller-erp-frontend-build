@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -28,11 +28,18 @@ const PICKUP_STATUS_OPTIONS = RENTAL_STATUS_OPTIONS.filter((opt) =>
 
 function RentalPickupPage() {
   const basePath = useRentalBasePath();
-  const [selectedId, setSelectedId] = useState('');
+  const location = useLocation();
+  const [selectedId, setSelectedId] = useState(() => location.state?.selectedId || '');
   const [detail, setDetail] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [scansReady, setScansReady] = useState(false);
   const [unitAssignments, setUnitAssignments] = useState([]);
+
+  useEffect(() => {
+    if (location.state?.selectedId) {
+      setSelectedId(location.state.selectedId);
+    }
+  }, [location.state?.selectedId]);
 
   const {
     rentals: queue,
@@ -60,6 +67,7 @@ function RentalPickupPage() {
     sortOrder: 'asc',
     limit: 15,
     dateField: 'scheduledStartAt',
+    awaitingPickup: true,
   });
 
   useEffect(() => {
@@ -202,16 +210,31 @@ function RentalPickupPage() {
                 disabled={
                   submitting ||
                   !scansReady ||
-                  ![RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED].includes(detail.rental.status)
+                  ![
+                    RENTAL_STATUS.RESERVED,
+                    RENTAL_STATUS.CONFIRMED,
+                    RENTAL_STATUS.OVERDUE,
+                  ].includes(detail.rental.status) ||
+                  Boolean(detail.rental.actualStartAt || detail.rental.pickedUpAt)
                 }
                 onClick={handlePickup}
               >
                 {submitting
                   ? 'Processing…'
                   : scansReady
-                    ? 'Confirm pickup'
+                    ? detail.rental.status === RENTAL_STATUS.OVERDUE
+                      ? 'Confirm late pickup'
+                      : 'Confirm pickup'
                     : 'Assign and scan all units first'}
               </Button>
+              {detail.rental.status === RENTAL_STATUS.OVERDUE &&
+                !detail.rental.actualStartAt &&
+                !detail.rental.pickedUpAt && (
+                  <p className="text-center text-xs text-red-600 dark:text-red-400">
+                    Pickup is overdue — customer arrived late. Inventory is still held; you can
+                    complete pickup now.
+                  </p>
+                )}
             </Card>
           )}
         </div>

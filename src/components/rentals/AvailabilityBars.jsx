@@ -32,12 +32,15 @@ function AvailabilityBars({ products = [], productNames = {}, loading }) {
                 {productNames[row.productId] || `Product …${row.productId?.slice?.(-6) || ''}`}
               </span>
               <span className={ok ? 'text-emerald-600' : 'text-red-600'}>
-                {ok ? 'Available' : 'Insufficient'}
+                {ok ? 'Available' : 'Not available'}
               </span>
             </div>
             <p className="mt-stellar-1 text-xs text-stellar-text-muted">
               {available} free · {allocated} booked · {total} total · need {row.requested}
             </p>
+            {!ok && row.error ? (
+              <p className="mt-stellar-1 text-xs text-red-600">{row.error}</p>
+            ) : null}
             <div className="mt-stellar-2 h-2 overflow-hidden rounded-full bg-stellar-border">
               <div
                 className={`h-full rounded-full transition-all ${

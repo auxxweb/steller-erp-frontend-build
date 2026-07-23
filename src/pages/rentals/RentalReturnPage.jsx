@@ -55,6 +55,7 @@ function RentalReturnPage() {
     sortOrder: 'asc',
     limit: 15,
     dateField: 'scheduledEndAt',
+    requireStarted: true,
   });
 
   useEffect(() => {

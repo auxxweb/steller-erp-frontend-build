@@ -46,7 +46,7 @@ export function createPwaManifest(base = '/') {
     background_color: '#0a0a0a',
     display: 'standalone',
     display_override: ['window-controls-overlay', 'standalone', 'browser'],
-    orientation: 'any',
+    orientation: 'portrait',
     scope: base,
     start_url: base,
     lang: 'en',

@@ -34,12 +34,18 @@ export function computeAdvanceRequirement({
       const pct = Math.max(0, Math.min(100, Number(product.advancePayment.percentage) || 0));
       if (pct <= 0) continue;
       const qty = item.quantity || 1;
-      const subtotal = lineSubtotalForProduct({
-        product,
-        quantity: qty,
-        rateType: 'daily',
-        durationDays,
-      });
+      const comboUnitRate = item.pricing
+        ? Number(resolveUnitRate(item.pricing, 'daily')) || 0
+        : null;
+      const subtotal =
+        comboUnitRate != null
+          ? comboUnitRate * qty * Math.max(1, durationDays)
+          : lineSubtotalForProduct({
+              product,
+              quantity: qty,
+              rateType: 'daily',
+              durationDays,
+            });
       const amount = Math.round((subtotal * pct) / 100);
       entries.push({ id: product.id, name: product.name, percentage: pct, amount });
     }

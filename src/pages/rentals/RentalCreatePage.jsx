@@ -5,11 +5,11 @@ import Button from '../../components/ui/Button.jsx';
 import NumberInput from '../../components/ui/NumberInput.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
+import ComboPricingPanel from '../../components/combos/ComboPricingPanel.jsx';
+import ComboUnitPicker from '../../components/rentals/ComboUnitPicker.jsx';
+import ComboBookingEditor from '../../components/rentals/ComboBookingEditor.jsx';
 import RentalProductPicker from '../../components/rentals/RentalProductPicker.jsx';
 import AvailabilityBars from '../../components/rentals/AvailabilityBars.jsx';
-import ComboPricingPanel from '../../components/combos/ComboPricingPanel.jsx';
-import ComboAvailabilityPanel from '../../components/combos/ComboAvailabilityPanel.jsx';
-import ComboUnitPicker from '../../components/rentals/ComboUnitPicker.jsx';
 import useRentalBasePath, { useCanWriteRentals } from '../../hooks/useRentalBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
@@ -22,7 +22,7 @@ import RentalCustomerPicker, {
 } from '../../components/rentals/RentalCustomerPicker.jsx';
 import { fetchAllProducts } from '../../services/productService.js';
 import { fetchCategories } from '../../services/categoryService.js';
-import { fetchCombos, fetchComboPrice } from '../../services/comboService.js';
+import { fetchCombos } from '../../services/comboService.js';
 import { checkRentalAvailability, createRental } from '../../services/rentalService.js';
 import {
   RENTAL_TYPE,
@@ -34,9 +34,23 @@ import {
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 import { inferComboRateType } from '../../utils/comboFormHelpers.js';
-import { buildComboUnitSlots, comboSlotsToPayload } from '../../utils/comboUnitHelpers.js';
+import {
+  buildComboCompositionFromCombo,
+  buildComboUnitSlots,
+  comboSlotsToPayload,
+} from '../../utils/comboUnitHelpers.js';
 import { computeAdvanceRequirement } from '../../utils/advancePayment.js';
+import { computeDurationDays, resolveUnitRate } from '../../utils/rentalPricing.js';
 import { formatCurrency } from '../../utils/format.js';
+
+function preserveComboSlots(composition, prevSlots = []) {
+  const next = buildComboUnitSlots(composition);
+  const prevByKey = new Map(prevSlots.map((s) => [s.slotKey, s.productUnit]));
+  return next.map((s) => ({
+    ...s,
+    productUnit: prevByKey.get(s.slotKey) || '',
+  }));
+}
 
 function RentalCreatePage() {
   const basePath = useRentalBasePath();
@@ -69,6 +83,8 @@ function RentalCreatePage() {
   const [combos, setCombos] = useState([]);
   const [availability, setAvailability] = useState(null);
   const [comboPricing, setComboPricing] = useState(null);
+  const [comboComposition, setComboComposition] = useState([]);
+  const [comboExtraLines, setComboExtraLines] = useState([]);
   const [comboUnitSlots, setComboUnitSlots] = useState([]);
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -128,8 +144,107 @@ function RentalCreatePage() {
   };
 
   const selectedCombo = combos.find((c) => c.id === comboId);
-  const selectedComboItems = selectedCombo?.items || [];
   const isComboMode = bookingMode === 'combo';
+  const comboRateType = inferComboRateType(selectedCombo?.pricing || {});
+
+  const bookingDurationDays = useMemo(() => {
+    const start = isDirect ? new Date().toISOString() : fromDatetimeLocalValue(scheduledStartAt);
+    const end = fromDatetimeLocalValue(scheduledEndAt);
+    return computeDurationDays(start, end);
+  }, [isDirect, scheduledStartAt, scheduledEndAt]);
+
+  useEffect(() => {
+    if (!comboId) {
+      setComboComposition([]);
+      setComboExtraLines([]);
+      setComboUnitSlots([]);
+      setComboPricing(null);
+      setAvailability(null);
+      return;
+    }
+    const combo = combos.find((c) => c.id === comboId);
+    const composition = buildComboCompositionFromCombo(combo);
+    setComboComposition(composition);
+    setComboExtraLines([]);
+    setComboUnitSlots(buildComboUnitSlots(composition));
+    setAvailability(null);
+    setComboPricing(null);
+  }, [comboId, rentalType, combos]);
+
+  const handleComboCompositionChange = (next) => {
+    setComboComposition(next);
+    setComboUnitSlots((prev) => preserveComboSlots(next, prev));
+    setAvailability(null);
+    setComboPricing(null);
+  };
+
+  const adjustedComboPricing = useMemo(() => {
+    if (!isComboMode || !comboId) return null;
+    const mult =
+      comboRateType === 'weekly'
+        ? Math.ceil(bookingDurationDays / 7)
+        : comboRateType === 'monthly'
+          ? Math.ceil(bookingDurationDays / 30)
+          : bookingDurationDays;
+
+    const comboLines = comboComposition.map((line) => {
+      const unitRate = Number(resolveUnitRate(line.pricing || {}, comboRateType)) || 0;
+      const lineSubtotal = Math.round(unitRate * line.quantity * mult * 100) / 100;
+      return {
+        productId: line.product,
+        productName: line.productName,
+        quantity: line.quantity,
+        unitRate,
+        lineSubtotal,
+        source: 'combo',
+      };
+    });
+
+    const extraPricingLines = comboExtraLines
+      .filter((l) => l.product)
+      .map((line) => {
+        const product = products.find((p) => String(p.id) === String(line.product));
+        const rateType = line.rateType || 'daily';
+        const unitRate =
+          Number(resolveUnitRate(product?.pricing?.individual || product?.pricing, rateType)) || 0;
+        const lineMult =
+          rateType === 'weekly'
+            ? Math.ceil(bookingDurationDays / 7)
+            : rateType === 'monthly'
+              ? Math.ceil(bookingDurationDays / 30)
+              : bookingDurationDays;
+        const lineSubtotal = Math.round(unitRate * (line.quantity || 1) * lineMult * 100) / 100;
+        return {
+          productId: line.product,
+          productName: product?.name || 'Extra product',
+          quantity: line.quantity || 1,
+          unitRate,
+          lineSubtotal,
+          source: 'extra',
+        };
+      });
+
+    const lines = [...comboLines, ...extraPricingLines];
+    const bundleSubtotal = Math.round(lines.reduce((s, l) => s + l.lineSubtotal, 0) * 100) / 100;
+    const bundleRate = mult > 0 ? Math.round((bundleSubtotal / mult) * 100) / 100 : bundleSubtotal;
+    return {
+      rateType: comboRateType,
+      durationDays: bookingDurationDays,
+      lines,
+      bundleRate,
+      perDay: bundleRate,
+      bundleSubtotal,
+      total: bundleSubtotal,
+    };
+  }, [
+    isComboMode,
+    comboId,
+    comboComposition,
+    comboExtraLines,
+    products,
+    comboRateType,
+    bookingDurationDays,
+  ]);
 
   const scheduleForAdvance = useMemo(
     () => ({
@@ -145,28 +260,21 @@ function RentalCreatePage() {
     () =>
       computeAdvanceRequirement({
         products,
-        lines,
-        comboItems: isComboMode ? selectedComboItems : [],
+        lines: isComboMode ? comboExtraLines : lines,
+        comboItems: isComboMode ? comboComposition : [],
         ...scheduleForAdvance,
       }),
-    [products, lines, isComboMode, selectedComboItems, scheduleForAdvance],
+    [products, lines, isComboMode, comboComposition, comboExtraLines, scheduleForAdvance],
   );
 
   useEffect(() => {
     setSkipAdvancePayment(false);
-  }, [lines, comboId, bookingMode]);
+  }, [lines, comboId, bookingMode, comboComposition, comboExtraLines]);
 
   const advancePaymentBlocked =
     advanceRequirement.hasRequired &&
     !skipAdvancePayment &&
     advanceAmount < advanceRequirement.required;
-
-  useEffect(() => {
-    const combo = combos.find((c) => c.id === comboId);
-    setComboUnitSlots(buildComboUnitSlots(combo?.items || []));
-    setAvailability(null);
-    setComboPricing(null);
-  }, [comboId, rentalType, combos]);
 
   const buildPayload = (customerId) => {
     const base = {
@@ -184,10 +292,27 @@ function RentalCreatePage() {
     };
 
     if (bookingMode === 'combo' && comboId) {
-      const payload = { ...base, combo: comboId };
+      const payload = {
+        ...base,
+        combo: comboId,
+        rateType: comboRateType,
+        comboItems: comboComposition.map((l) => ({
+          product: l.product,
+          quantity: l.quantity,
+        })),
+      };
       if (!isPrebook && comboUnitSlots.length) {
         payload.comboUnits = comboSlotsToPayload(comboUnitSlots);
       }
+      const extras = comboExtraLines
+        .filter((l) => l.product)
+        .map((l) => ({
+          product: l.product,
+          quantity: l.quantity,
+          rateType: l.rateType || 'daily',
+          ...(l.productUnit ? { productUnit: l.productUnit } : {}),
+        }));
+      if (extras.length) payload.items = extras;
       return payload;
     }
 
@@ -258,20 +383,24 @@ function RentalCreatePage() {
     setChecking(true);
     setComboPricing(null);
     try {
+      if (isComboMode && !comboId) {
+        throw new Error('Select a combo bundle');
+      }
+      if (isComboMode && !comboComposition.length && !comboExtraLines.some((l) => l.product)) {
+        throw new Error('Keep at least one combo product or add an extra product');
+      }
       const customerId = await resolveCustomerId();
       const payload = buildPayload(customerId);
       const { data } = await checkRentalAvailability(payload);
       setAvailability(data.data);
 
+      if (!data.data?.available) {
+        const firstError = data.data?.products?.find((p) => !p.isAvailable && p.error)?.error;
+        if (firstError) toast.error(firstError);
+      }
+
       if (bookingMode === 'combo' && comboId) {
-        const selectedCombo = combos.find((c) => c.id === comboId);
-        const rateType = inferComboRateType(selectedCombo?.pricing || {});
-        const priceRes = await fetchComboPrice(comboId, {
-          scheduledStartAt: payload.scheduledStartAt,
-          scheduledEndAt: payload.scheduledEndAt,
-          rateType,
-        });
-        setComboPricing(priceRes.data.data.pricing);
+        setComboPricing(adjustedComboPricing);
       }
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Availability check failed'));
@@ -296,13 +425,24 @@ function RentalCreatePage() {
       return;
     }
     if (bookingMode === 'combo' && comboId) {
-      const slots = comboUnitSlots.length
-        ? comboUnitSlots
-        : buildComboUnitSlots(selectedComboItems);
-      const missing = slots.filter((s) => !s.productUnit);
-      if (missing.length) {
-        const names = missing.map((s) => s.productName).join(', ');
-        throw new Error(`Direct combo rental requires a serial or QR scan for: ${names}`);
+      if (comboComposition.length) {
+        const slots = comboUnitSlots.length
+          ? comboUnitSlots
+          : buildComboUnitSlots(comboComposition);
+        const missing = slots.filter((s) => !s.productUnit);
+        if (missing.length) {
+          const names = missing.map((s) => s.productName).join(', ');
+          throw new Error(`Direct combo rental requires a serial or QR scan for: ${names}`);
+        }
+      }
+      const missingExtras = comboExtraLines.filter(
+        (l) => l.product && Number(l.quantity) === 1 && !l.productUnit,
+      );
+      if (missingExtras.length) {
+        const names = missingExtras
+          .map((l) => products.find((p) => String(p.id) === String(l.product))?.name || 'product')
+          .join(', ');
+        throw new Error(`Direct rental requires a serial for extra products: ${names}`);
       }
     }
   };
@@ -313,6 +453,9 @@ function RentalCreatePage() {
     try {
       if (isComboMode && !comboId) {
         throw new Error('Select a combo bundle');
+      }
+      if (isComboMode && !comboComposition.length && !comboExtraLines.some((l) => l.product)) {
+        throw new Error('Keep at least one combo product or add an extra product');
       }
       if (advancePaymentBlocked) {
         throw new Error(
@@ -552,14 +695,14 @@ function RentalCreatePage() {
             </div>
             {isPrebook && isComboMode && (
               <p className="text-xs text-stellar-text-muted">
-                Prebook reserves all combo products — assign each serial at pickup (dropdown or QR
-                scan).
+                Adjust combo products if needed, add extras at product rates, then assign serials at
+                pickup.
               </p>
             )}
             {isDirect && isComboMode && (
               <p className="text-xs text-stellar-text-muted">
-                Direct combo rental requires a serial for every product in the bundle before
-                booking.
+                Adjust the combo, add extras if needed, then assign a serial for every remaining
+                unit before booking.
               </p>
             )}
 
@@ -581,14 +724,58 @@ function RentalCreatePage() {
                   required
                 />
 
-                {comboId && selectedComboItems.length > 0 && (
-                  <ComboUnitPicker
-                    comboItems={selectedComboItems}
-                    slots={comboUnitSlots}
-                    onChange={setComboUnitSlots}
-                    isPrebook={isPrebook}
-                  />
-                )}
+                {comboId ? (
+                  <>
+                    <ComboBookingEditor
+                      lines={comboComposition}
+                      onChange={handleComboCompositionChange}
+                      rateType={comboRateType}
+                      durationDays={bookingDurationDays}
+                    />
+
+                    <div className="space-y-stellar-2 border-t border-stellar-border pt-stellar-4">
+                      <p className="text-sm font-medium text-stellar-text">Add extra products</p>
+                      <p className="text-xs text-stellar-text-muted">
+                        Extra products use each product&apos;s catalog rate (not the combo rate).
+                      </p>
+                      <RentalProductPicker
+                        categories={categories}
+                        products={products}
+                        lines={
+                          comboExtraLines.length
+                            ? comboExtraLines
+                            : [
+                                {
+                                  category: '',
+                                  product: '',
+                                  quantity: 1,
+                                  rateType: 'daily',
+                                  productUnit: '',
+                                  key: 'combo-extra-0',
+                                },
+                              ]
+                        }
+                        onChange={(next) => {
+                          setComboExtraLines(next);
+                          setAvailability(null);
+                          setComboPricing(null);
+                        }}
+                        onProductDiscovered={handleProductDiscovered}
+                        isPrebook={isPrebook}
+                        crossBranch
+                      />
+                    </div>
+
+                    {comboComposition.length > 0 && (
+                      <ComboUnitPicker
+                        comboItems={comboComposition}
+                        slots={comboUnitSlots}
+                        onChange={setComboUnitSlots}
+                        isPrebook={isPrebook}
+                      />
+                    )}
+                  </>
+                ) : null}
               </div>
             ) : (
               <RentalProductPicker
@@ -613,36 +800,30 @@ function RentalCreatePage() {
               </Button>
             </div>
 
-            {availability && (
+            {(availability || (isComboMode && adjustedComboPricing)) && (
               <div className="mt-stellar-4 space-y-stellar-4">
-                <p
-                  className={`text-sm font-medium ${
-                    availability.available ? 'text-emerald-600' : 'text-red-600'
-                  }`}
-                >
-                  {availability.available
-                    ? isComboMode
-                      ? 'Combo is available for selected dates'
-                      : 'All products available for selected dates'
-                    : isComboMode
-                      ? 'Combo is not fully available'
+                {availability && (
+                  <p
+                    className={`text-sm font-medium ${
+                      availability.available ? 'text-emerald-600' : 'text-red-600'
+                    }`}
+                  >
+                    {availability.available
+                      ? 'All selected products available for selected dates'
                       : 'Some products are not available'}
-                </p>
-
-                {isComboMode && availability.combo && (
-                  <ComboAvailabilityPanel availability={availability.combo} />
+                  </p>
                 )}
 
-                {isComboMode && comboPricing && (
+                {isComboMode && (comboPricing || adjustedComboPricing) && (
                   <div>
                     <p className="mb-stellar-2 text-sm font-medium text-stellar-text">
-                      Combo pricing
+                      Booking price (combo rates + extras at product rates)
                     </p>
-                    <ComboPricingPanel pricing={comboPricing} />
+                    <ComboPricingPanel pricing={comboPricing || adjustedComboPricing} />
                   </div>
                 )}
 
-                {!isComboMode && availability.products?.length > 0 && (
+                {availability?.products?.length > 0 && (
                   <AvailabilityBars
                     products={availability.products}
                     productNames={productNames}

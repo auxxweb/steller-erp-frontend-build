@@ -41,7 +41,11 @@ export const ACTIVE_RENTAL_STATUSES = [
   RENTAL_STATUS.PARTIALLY_RETURNED,
 ];
 
-export const PICKUP_STATUSES = [RENTAL_STATUS.RESERVED, RENTAL_STATUS.CONFIRMED];
+export const PICKUP_STATUSES = [
+  RENTAL_STATUS.RESERVED,
+  RENTAL_STATUS.CONFIRMED,
+  RENTAL_STATUS.OVERDUE,
+];
 
 /** Prebook pickup list — includes cancelled bookings under "All pickup statuses". */
 export const PREBOOK_PICKUP_QUEUE_STATUSES = [

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { applyPWAUpdate, registerAppSW } from '../../pwa/registerPWA.js';
+import { preferPortraitOrientation } from '../../pwa/preferPortraitOrientation.js';
 import InstallPWA from './InstallPWA.jsx';
 import OfflineIndicator from './OfflineIndicator.jsx';
 import PWAUpdatePrompt from './PWAUpdatePrompt.jsx';
@@ -21,6 +22,8 @@ function PWAProvider({ children }) {
 
     return () => clearTimeout(toastTimer);
   }, []);
+
+  useEffect(() => preferPortraitOrientation(), []);
 
   const handleUpdate = useCallback(() => {
     setNeedRefresh(false);
