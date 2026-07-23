@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-react-DlW_TQ7p.js";import{a as t}from"./Card-D7Si8CNI.js";import{a as n}from"./rentalConstants-CpXmb8e3.js";var r=e();function i({status:e,className:i}){let a=n[e]||n.draft;return(0,r.jsx)(`span`,{className:t(`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`,a.className,i),children:a.label})}export{i as t};
