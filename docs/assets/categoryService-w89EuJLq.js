@@ -1,1 +1,0 @@
-import{n as e}from"./Card-D7Si8CNI.js";var t=t=>e.get(`/categories/stats`,{params:t}),n=t=>e.get(`/categories`,{params:t}),r=t=>e.get(`/categories/${t}`),i=t=>e.post(`/categories`,t),a=(t,n)=>e.patch(`/categories/${t}`,n),o=t=>e.delete(`/categories/${t}`);export{t as a,r as i,o as n,a as o,n as r,i as t};
