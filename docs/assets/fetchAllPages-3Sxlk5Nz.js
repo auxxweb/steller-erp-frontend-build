@@ -1,0 +1,1 @@
+var e=100;async function t(t,{pageSize:n=e}={}){let r=[],i=1,a=1;do{let{items:e,pages:o}=await t(i,n);r.push(...e||[]),a=Math.max(1,Number(o)||1),i+=1}while(i<=a);return r}export{t};
