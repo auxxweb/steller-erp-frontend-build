@@ -400,6 +400,14 @@
     @apply placeholder:text-stellar-text-subtle;
   }
 
+  /* Native selects need extra right padding so the label isn't clipped by the chevron. */
+  select.input,
+  .input-select {
+    @apply pr-10;
+    max-width: 100%;
+    text-overflow: clip;
+  }
+
   .input:hover:not(:disabled) {
     border-color: var(--stellar-border-strong);
   }

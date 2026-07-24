@@ -9,6 +9,8 @@ export const getDashboardQuickActions = (role) => {
   const actions = {
     [ROLES.SUPER_ADMIN]: [
       { label: 'New booking', to: `${base}/rentals/new`, description: 'Create a rental reservation', accent: true },
+      { label: 'Active rentals', to: `${base}/rentals/active`, description: 'Gear currently out on rent' },
+      { label: 'Prebook pickup', to: `${base}/rentals/pickup`, description: 'Hand over reserved bookings' },
       { label: 'Leave requests', to: `${base}/leaves`, description: 'Approve employee leave' },
       { label: 'Reports', to: `${base}/reports`, description: 'Rental jobs and sales reports' },
       { label: 'Bills', to: `${base}/invoices`, description: 'View and close bills' },
@@ -17,8 +19,9 @@ export const getDashboardQuickActions = (role) => {
     ],
     [ROLES.BRANCH_ADMIN]: [
       { label: 'New booking', to: `${base}/rentals/new`, description: 'Create a rental reservation', accent: true },
+      { label: 'Active rentals', to: `${base}/rentals/active`, description: 'Gear currently out on rent' },
+      { label: 'Prebook pickup', to: `${base}/rentals/pickup`, description: 'Hand over reserved bookings' },
       { label: 'Reports', to: `${base}/reports`, description: 'Branch rental and sales reports' },
-      { label: 'Active rentals', to: `${base}/rentals/active`, description: 'Jobs out on rent now' },
       { label: 'Bills', to: `${base}/invoices`, description: 'Billing and close job' },
       { label: 'Customers', to: `${base}/customers`, description: 'Customer directory' },
       { label: 'Leave requests', to: `${base}/leaves`, description: 'Approve employee leave' },
@@ -26,11 +29,11 @@ export const getDashboardQuickActions = (role) => {
     ],
     [ROLES.EMPLOYEE]: [
       { label: 'New job', to: `${base}/rentals/new`, description: 'Create a rental booking', accent: true },
+      { label: 'Active jobs', to: `${base}/rentals/active`, description: 'Gear currently out on rent' },
+      { label: 'Prebook pickup', to: `${base}/rentals/pickup`, description: 'Hand over reserved bookings' },
+      { label: 'Return', to: `${base}/rentals/return`, description: 'Mark gear returned' },
       { label: 'Rentals', to: `${base}/rentals`, description: 'Bookings, pickup, return and billing' },
       { label: 'Bills', to: `${base}/invoices`, description: 'Finalize bills after return' },
-      { label: 'Active jobs', to: `${base}/rentals/active`, description: 'Active rentals at your branch' },
-      { label: 'Pickup', to: `${base}/rentals/pickup`, description: 'Mark prebook pickup' },
-      { label: 'Return', to: `${base}/rentals/return`, description: 'Mark gear returned' },
       { label: 'Attendance', to: `${base}/attendance`, description: 'View attendance and apply leave' },
     ],
   };

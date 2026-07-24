@@ -27,51 +27,46 @@ function ListFiltersBar({
   children,
   extraFilters,
 }) {
+  const hasSecondaryFilters = showDateFilters || children || extraFilters;
+
   const content = (
     <div className={`space-y-stellar-4 ${className}`}>
-      <div
-        className={`grid gap-stellar-4 ${
-          showDateFilters
-            ? showSearch
-              ? 'sm:grid-cols-2 lg:grid-cols-4'
-              : 'sm:grid-cols-2 lg:grid-cols-3'
-            : showSearch
-              ? 'sm:grid-cols-2 lg:grid-cols-3'
-              : 'sm:grid-cols-2'
-        }`}
-      >
-        {showSearch && (
-          <SearchField
-            id={`${idPrefix}-search`}
-            className="sm:col-span-2"
-            value={search}
-            onChange={onSearchChange}
-            onSearch={onSearchSubmit}
-            placeholder={searchPlaceholder}
-          />
-        )}
-        {showDateFilters && (
-          <div className="form-group">
-            <label htmlFor={`${idPrefix}-period`} className="form-label">
-              Date
-            </label>
-            <select
-              id={`${idPrefix}-period`}
-              className="input w-full"
-              value={period}
-              onChange={(e) => onPeriodChange?.(e.target.value)}
-            >
-              {DATE_PERIOD_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        {children}
-        {extraFilters}
-      </div>
+      {showSearch && (
+        <SearchField
+          id={`${idPrefix}-search`}
+          value={search}
+          onChange={onSearchChange}
+          onSearch={onSearchSubmit}
+          placeholder={searchPlaceholder}
+        />
+      )}
+
+      {hasSecondaryFilters && (
+        <div className="grid grid-cols-1 gap-stellar-4 sm:grid-cols-2 xl:grid-cols-3">
+          {showDateFilters && (
+            <div className="form-group min-w-0">
+              <label htmlFor={`${idPrefix}-period`} className="form-label">
+                Date
+              </label>
+              <select
+                id={`${idPrefix}-period`}
+                className="input input-select w-full"
+                value={period}
+                onChange={(e) => onPeriodChange?.(e.target.value)}
+              >
+                {DATE_PERIOD_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {children}
+          {extraFilters}
+        </div>
+      )}
+
       {showDateFilters && period === 'custom' && (
         <div className="grid gap-stellar-3 sm:grid-cols-2">
           <div className="form-group">

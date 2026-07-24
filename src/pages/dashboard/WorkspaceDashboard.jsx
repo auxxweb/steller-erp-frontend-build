@@ -91,7 +91,7 @@ function WorkspaceDashboard({ title }) {
         </h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
           Welcome back, {user?.name?.split(' ')[0] || 'there'}
-          {role === ROLES.EMPLOYEE && ' — only your jobs and invoices.'}
+          {role === ROLES.EMPLOYEE && ' — branch jobs and invoices shared with your team.'}
         </p>
       </div>
 

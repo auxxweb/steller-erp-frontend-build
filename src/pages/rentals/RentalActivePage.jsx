@@ -5,7 +5,14 @@ import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
 import useRentalList from '../../hooks/useRentalList.js';
-import { ACTIVE_RENTAL_STATUSES } from '../../utils/rentalConstants.js';
+import {
+  ACTIVE_RENTAL_STATUSES,
+  RENTAL_STATUS_OPTIONS,
+} from '../../utils/rentalConstants.js';
+
+const ACTIVE_STATUS_OPTIONS = RENTAL_STATUS_OPTIONS.filter((opt) =>
+  ACTIVE_RENTAL_STATUSES.includes(opt.value),
+);
 
 function RentalActivePage() {
   const basePath = useRentalBasePath();
@@ -34,6 +41,7 @@ function RentalActivePage() {
     sortOrder: 'asc',
     limit: 15,
     dateField: 'scheduledEndAt',
+    requireStarted: true,
   });
 
   return (
@@ -41,7 +49,7 @@ function RentalActivePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-stellar-text">Active rentals</h1>
         <p className="mt-stellar-1 text-sm text-stellar-text-muted">
-          Reserved, out on rent, and overdue bookings.
+          Gear currently out on rent. Prebook bookings awaiting handover are under Prebook pickup.
         </p>
       </div>
 
@@ -71,7 +79,8 @@ function RentalActivePage() {
               setStatusFilter(v);
               resetPage();
             }}
-            allStatusLabel="All active"
+            statusOptions={ACTIVE_STATUS_OPTIONS}
+            allStatusLabel="All out on rent"
           />
         </div>
         <RentalTable rentals={rentals} loading={loading} basePath={basePath} />

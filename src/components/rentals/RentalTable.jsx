@@ -2,10 +2,39 @@ import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import RentalStatusBadge from './RentalStatusBadge.jsx';
 import { formatDate } from '../../utils/format.js';
+import { cn } from '../../utils/cn.js';
+import {
+  RENTAL_LIFECYCLE_META,
+  resolveRentalLifecycleType,
+} from '../../utils/rentalConstants.js';
 
 function formatMoney(val) {
   if (val == null) return '—';
   return `₹${Number(val).toLocaleString('en-IN')}`;
+}
+
+function RentalLifecycleBadge({ rental }) {
+  const type = resolveRentalLifecycleType(rental);
+  const meta = RENTAL_LIFECYCLE_META[type] || RENTAL_LIFECYCLE_META.booked;
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        meta.className,
+      )}
+    >
+      {meta.label}
+    </span>
+  );
+}
+
+function TypeStatusCell({ rental }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <RentalLifecycleBadge rental={rental} />
+      <RentalStatusBadge status={rental.status} />
+    </div>
+  );
 }
 
 function RentalTable({ rentals, loading, basePath, compact = false }) {
@@ -35,6 +64,7 @@ function RentalTable({ rentals, loading, basePath, compact = false }) {
               <th>Customer</th>
               <th>Schedule</th>
               {!compact && <th>Total</th>}
+              <th>Type</th>
               <th>Status</th>
               <th className="text-right">Actions</th>
             </tr>
@@ -60,6 +90,9 @@ function RentalTable({ rentals, loading, basePath, compact = false }) {
                 {!compact && (
                   <td className="tabular-nums text-sm">{formatMoney(rental.amounts?.total)}</td>
                 )}
+                <td>
+                  <RentalLifecycleBadge rental={rental} />
+                </td>
                 <td>
                   <RentalStatusBadge status={rental.status} />
                 </td>
@@ -91,7 +124,7 @@ function RentalTable({ rentals, loading, basePath, compact = false }) {
                   {formatDate(rental.scheduledStartAt)} – {formatDate(rental.scheduledEndAt)}
                 </p>
               </div>
-              <RentalStatusBadge status={rental.status} />
+              <TypeStatusCell rental={rental} />
             </div>
             {!compact && (
               <p className="mt-stellar-2 text-sm tabular-nums">{formatMoney(rental.amounts?.total)}</p>

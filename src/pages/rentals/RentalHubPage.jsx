@@ -8,19 +8,35 @@ import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import useRentalBasePath, { useCanWriteRentals } from '../../hooks/useRentalBasePath.js';
 import useRentalList from '../../hooks/useRentalList.js';
 import { fetchRentalStats } from '../../services/rentalService.js';
-import { ACTIVE_RENTAL_STATUSES } from '../../utils/rentalConstants.js';
 
 function QuickLink({ to, title, description, accent }) {
   return (
     <Link
       to={to}
       className={`block rounded-stellar-xl border p-stellar-5 transition-stellar hover:border-stellar-accent ${
-        accent ? 'border-stellar-accent/30 bg-stellar-accent/5' : 'border-stellar-border bg-stellar-surface'
+        accent
+          ? 'border-stellar-accent/30 bg-stellar-accent/5'
+          : 'border-stellar-border bg-stellar-surface'
       }`}
     >
       <h3 className="font-semibold text-stellar-text">{title}</h3>
       <p className="mt-stellar-1 text-sm text-stellar-text-muted">{description}</p>
     </Link>
+  );
+}
+
+function StatCard({ label, value, loading, emphasize }) {
+  return (
+    <Card variant="muted" className="!p-stellar-4">
+      <p className="text-xs font-medium uppercase text-stellar-text-subtle">{label}</p>
+      <p
+        className={`mt-stellar-1 text-2xl font-semibold tabular-nums ${
+          emphasize ? 'text-red-600 dark:text-red-400' : 'text-stellar-text'
+        }`}
+      >
+        {loading ? '—' : value}
+      </p>
+    </Card>
   );
 }
 
@@ -70,10 +86,7 @@ function RentalHubPage() {
     };
   }, []);
 
-  const activeCount = ACTIVE_RENTAL_STATUSES.reduce(
-    (sum, s) => sum + (stats?.byStatus?.[s] || 0),
-    0,
-  );
+  const overview = stats?.overview || {};
 
   return (
     <div className="animate-fade-up opacity-0-start space-y-stellar-6">
@@ -93,29 +106,30 @@ function RentalHubPage() {
 
       <RentalNav />
 
-      <div className="grid grid-cols-2 gap-stellar-3 lg:grid-cols-4">
-        <Card variant="muted" className="!p-stellar-4">
-          <p className="text-xs font-medium uppercase text-stellar-text-subtle">Active</p>
-          <p className="mt-stellar-1 text-2xl font-semibold tabular-nums">
-            {statsLoading ? '—' : activeCount}
-          </p>
-        </Card>
-        <Card variant="muted" className="!p-stellar-4">
-          <p className="text-xs font-medium uppercase text-stellar-text-subtle">Reserved</p>
-          <p className="mt-stellar-1 text-2xl font-semibold tabular-nums">
-            {stats?.byStatus?.reserved ?? '—'}
-          </p>
-        </Card>
-        <Card variant="muted" className="!p-stellar-4">
-          <p className="text-xs font-medium uppercase text-stellar-text-subtle">Overdue</p>
-          <p className="mt-stellar-1 text-2xl font-semibold tabular-nums text-red-600">
-            {stats?.byStatus?.overdue ?? '—'}
-          </p>
-        </Card>
-        <Card variant="muted" className="!p-stellar-4">
-          <p className="text-xs font-medium uppercase text-stellar-text-subtle">Total</p>
-          <p className="mt-stellar-1 text-2xl font-semibold tabular-nums">{stats?.total ?? '—'}</p>
-        </Card>
+      <div className="grid grid-cols-2 gap-stellar-3 lg:grid-cols-5">
+        <StatCard
+          label="Active rentals"
+          value={overview.activeRentals ?? 0}
+          loading={statsLoading}
+        />
+        <StatCard
+          label="Active bookings"
+          value={overview.activeBookings ?? 0}
+          loading={statsLoading}
+        />
+        <StatCard
+          label="Overdue returns"
+          value={overview.overdueReturns ?? 0}
+          loading={statsLoading}
+          emphasize
+        />
+        <StatCard
+          label="Overdue pickups"
+          value={overview.overduePickups ?? 0}
+          loading={statsLoading}
+          emphasize
+        />
+        <StatCard label="Closed" value={overview.closed ?? 0} loading={statsLoading} />
       </div>
 
       <div className="grid gap-stellar-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -127,7 +141,7 @@ function RentalHubPage() {
         <QuickLink
           to={`${basePath}/active`}
           title="Active rentals"
-          description="Out on rent right now"
+          description="Gear currently out on rent"
         />
         <QuickLink
           to={`${basePath}/pickup`}

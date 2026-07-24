@@ -22,7 +22,7 @@ function CustomerFilters({
         </label>
         <select
           id="customer-status"
-          className="input"
+          className="input input-select w-full"
           value={statusFilter}
           onChange={(e) => onStatusChange(e.target.value)}
         >

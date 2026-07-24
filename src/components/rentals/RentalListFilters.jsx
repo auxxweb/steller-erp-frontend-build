@@ -33,13 +33,13 @@ function RentalListFilters({
       onDateToChange={onDateToChange}
       showSubmit={false}
     >
-      <div className="form-group">
+      <div className="form-group min-w-0">
         <label htmlFor={`${idPrefix}-status`} className="form-label">
           Status
         </label>
         <select
           id={`${idPrefix}-status`}
-          className="input w-full"
+          className="input input-select w-full"
           value={statusFilter}
           onChange={(e) => onStatusChange?.(e.target.value)}
         >

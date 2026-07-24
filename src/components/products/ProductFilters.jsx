@@ -11,13 +11,13 @@ function ProductFilters({
 }) {
   return (
     <div className="flex flex-col gap-stellar-3 sm:flex-row sm:flex-wrap sm:items-end">
-      <div className="form-group w-full sm:w-40">
+      <div className="form-group w-full min-w-0 sm:min-w-[12rem] sm:flex-1 sm:max-w-xs">
         <label htmlFor="product-status" className="form-label">
           Status
         </label>
         <select
           id="product-status"
-          className="input w-full"
+          className="input input-select w-full"
           value={statusFilter}
           onChange={(e) => onStatusChange(e.target.value)}
         >

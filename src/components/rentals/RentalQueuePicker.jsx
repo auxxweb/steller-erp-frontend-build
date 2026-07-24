@@ -3,6 +3,25 @@ import SearchField from '../ui/SearchField.jsx';
 import RentalStatusBadge from './RentalStatusBadge.jsx';
 import { formatDate } from '../../utils/format.js';
 import { cn } from '../../utils/cn.js';
+import {
+  RENTAL_LIFECYCLE_META,
+  resolveRentalLifecycleType,
+} from '../../utils/rentalConstants.js';
+
+function RentalLifecycleBadge({ rental }) {
+  const type = resolveRentalLifecycleType(rental);
+  const meta = RENTAL_LIFECYCLE_META[type] || RENTAL_LIFECYCLE_META.booked;
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        meta.className,
+      )}
+    >
+      {meta.label}
+    </span>
+  );
+}
 
 function matchesSearch(rental, query) {
   if (!query) return true;
@@ -100,6 +119,7 @@ function RentalQueuePicker({
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-stellar-2">
+                  <RentalLifecycleBadge rental={rental} />
                   <RentalStatusBadge status={rental.status} />
                   {dateValue && (
                     <span className="text-xs text-stellar-text-muted">
