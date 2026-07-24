@@ -7,7 +7,7 @@ import ProductUnitTable from '../../components/products/ProductUnitTable.jsx';
 import QrDisplayModal from '../../components/products/QrDisplayModal.jsx';
 import {
   fetchProductAvailability,
-  fetchProductUnits,
+  fetchAllProductUnits,
   fetchUnitQr,
 } from '../../services/productService.js';
 import { useCanManageProducts } from '../../hooks/useProductBasePath.js';
@@ -26,13 +26,13 @@ function ProductInventoryPage() {
     (async () => {
       setLoading(true);
       try {
-        const [availRes, unitsRes] = await Promise.all([
+        const [availRes, units] = await Promise.all([
           fetchProductAvailability(productId),
-          fetchProductUnits(productId, { limit: 50 }),
+          fetchAllProductUnits(productId),
         ]);
         if (!cancelled) {
           setAvailability(availRes.data.data.availability);
-          setUnits(unitsRes.data.data.units);
+          setUnits(units);
         }
       } finally {
         if (!cancelled) setLoading(false);

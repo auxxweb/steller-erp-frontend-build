@@ -13,7 +13,7 @@ import useListFilters from '../../hooks/useListFilters.js';
 import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import ProductStatsCards from '../../components/products/ProductStatsCards.jsx';
 import DeleteProductModal from '../../components/products/DeleteProductModal.jsx';
-import { fetchCategories } from '../../services/categoryService.js';
+import { fetchAllCategories } from '../../services/categoryService.js';
 import useProductBasePath, { useCanManageProducts } from '../../hooks/useProductBasePath.js';
 import {
   fetchProducts,
@@ -76,8 +76,8 @@ function ProductListPage() {
   useFilterPageEffect({ filterKey, page, setPage, load: loadProducts });
 
   useEffect(() => {
-    fetchCategories({ limit: 100 })
-      .then(({ data }) => setCategories(data.data.categories))
+    fetchAllCategories()
+      .then(setCategories)
       .catch(() => setCategories([]));
   }, []);
 

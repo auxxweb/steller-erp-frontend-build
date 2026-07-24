@@ -3,7 +3,7 @@ import Button from '../ui/Button.jsx';
 import NumberInput from '../ui/NumberInput.jsx';
 import SearchableSelect from '../ui/SearchableSelect.jsx';
 import QrScanModal from '../qr/QrScanModal.jsx';
-import { fetchProduct, fetchProductUnits } from '../../services/productService.js';
+import { fetchProduct, fetchAllProductUnits } from '../../services/productService.js';
 import { verifyQr } from '../../services/qrService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
@@ -82,10 +82,10 @@ function RentalProductPicker({
 
     setLoadingProducts((prev) => new Set(prev).add(key));
     try {
-      const { data } = await fetchProductUnits(key, { limit: 100 });
+      const units = await fetchAllProductUnits(key);
       setUnitsByProduct((prev) => ({
         ...prev,
-        [key]: data.data.units || [],
+        [key]: units,
       }));
     } catch {
       setUnitsByProduct((prev) => ({ ...prev, [key]: [] }));

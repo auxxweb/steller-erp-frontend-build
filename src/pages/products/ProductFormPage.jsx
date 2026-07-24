@@ -7,7 +7,7 @@ import {
   hasValidationErrors,
 } from '../../utils/productValidation.js';
 import useProductBasePath, { useCanManageProducts } from '../../hooks/useProductBasePath.js';
-import { fetchCategories } from '../../services/categoryService.js';
+import { fetchAllCategories } from '../../services/categoryService.js';
 import {
   createProduct,
   updateProduct,
@@ -103,8 +103,8 @@ function ProductFormPage() {
   }, [canManage, basePath, navigate]);
 
   useEffect(() => {
-    fetchCategories({ limit: 100 })
-      .then(({ data }) => setCategories(data.data.categories))
+    fetchAllCategories()
+      .then(setCategories)
       .catch(() => setCategories([]));
     fetchWorkspaceSettings()
       .then(({ data }) => setGstPolicy(data.data.gstPolicy || null))

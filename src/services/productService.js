@@ -1,4 +1,5 @@
 import api from './api.js';
+import { fetchAllPages } from '../utils/fetchAllPages.js';
 
 export const fetchInventoryStats = (params) =>
   api.get('/products/inventory/stats', { params });
@@ -9,22 +10,16 @@ const CATALOG_PAGE_SIZE = 100;
 
 /** Load every page of products (API caps at 100 per page). */
 export async function fetchAllProducts(params = {}) {
-  const all = [];
-  let page = 1;
-  let pages = 1;
-
-  do {
-    const { data } = await fetchProducts({
-      ...params,
-      page,
-      limit: CATALOG_PAGE_SIZE,
-    });
-    all.push(...(data.data.products || []));
-    pages = data.data.pagination?.pages || 1;
-    page += 1;
-  } while (page <= pages);
-
-  return all;
+  return fetchAllPages(
+    async (page, limit) => {
+      const { data } = await fetchProducts({ ...params, page, limit });
+      return {
+        items: data.data.products || [],
+        pages: data.data.pagination?.pages || 1,
+      };
+    },
+    { pageSize: CATALOG_PAGE_SIZE },
+  );
 }
 
 export const fetchProduct = (id) => api.get(`/products/${id}`);
@@ -42,6 +37,20 @@ export const deleteProduct = (id) => api.delete(`/products/${id}`);
 
 export const fetchProductUnits = (productId, params) =>
   api.get(`/products/${productId}/units`, { params });
+
+/** Load every page of units for a product (API caps at 100 per page). */
+export async function fetchAllProductUnits(productId, params = {}) {
+  return fetchAllPages(
+    async (page, limit) => {
+      const { data } = await fetchProductUnits(productId, { ...params, page, limit });
+      return {
+        items: data.data.units || [],
+        pages: data.data.pagination?.pages || 1,
+      };
+    },
+    { pageSize: CATALOG_PAGE_SIZE },
+  );
+}
 
 export const createProductUnit = (productId, payload) =>
   api.post(`/products/${productId}/units`, payload);

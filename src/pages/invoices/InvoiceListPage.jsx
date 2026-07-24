@@ -4,7 +4,7 @@ import Card from '../../components/ui/Card.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import useInvoiceBasePath from '../../hooks/useInvoiceBasePath.js';
 import { fetchInvoices } from '../../services/invoiceService.js';
-import { fetchBranches } from '../../services/branchService.js';
+import { fetchAllBranches } from '../../services/branchService.js';
 import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import useListFilters from '../../hooks/useListFilters.js';
@@ -48,8 +48,8 @@ function InvoiceListPage() {
 
   useEffect(() => {
     if (!isSuperAdmin) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches || []))
+    fetchAllBranches()
+      .then(setBranches)
       .catch(() => setBranches([]));
   }, [isSuperAdmin]);
 

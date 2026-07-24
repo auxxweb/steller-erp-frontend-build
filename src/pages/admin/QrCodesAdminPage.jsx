@@ -5,7 +5,7 @@ import ListFiltersBar from '../../components/ui/ListFiltersBar.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
 import QrSerialImage from '../../components/qr/QrSerialImage.jsx';
 import { buildUnitQrScanPayload } from '../../utils/qrPayload.js';
-import { fetchBranches } from '../../services/branchService.js';
+import { fetchAllBranches } from '../../services/branchService.js';
 import {
   fetchQrCatalogUnits,
   downloadQrCatalogBulkZip,
@@ -48,8 +48,8 @@ function QrCodesAdminPage() {
   const [bulkLoading, setBulkLoading] = useState(false);
 
   useEffect(() => {
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data?.branches || data.data || []))
+    fetchAllBranches()
+      .then(setBranches)
       .catch(() => setBranches([]));
   }, []);
 

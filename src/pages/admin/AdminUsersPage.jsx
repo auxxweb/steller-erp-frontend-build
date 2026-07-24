@@ -6,7 +6,7 @@ import PasswordInput from '../../components/ui/PasswordInput.jsx';
 import Modal from '../../components/ui/Modal.jsx';
 import UserAttendanceModal from '../../components/admin/UserAttendanceModal.jsx';
 import AdminUserPasswordPanel from '../../components/admin/AdminUserPasswordPanel.jsx';
-import { fetchBranches } from '../../services/branchService.js';
+import { fetchAllBranches } from '../../services/branchService.js';
 import { createShift, deleteShift, fetchShifts, updateShift } from '../../services/shiftService.js';
 import {
   fetchUsers,
@@ -365,9 +365,8 @@ function AdminUsersPage() {
   }, [dateParams]);
 
   useEffect(() => {
-    fetchBranches({ limit: 100 })
-      .then((r) => {
-        const list = r.data.data.branches || [];
+    fetchAllBranches()
+      .then((list) => {
         setBranches(list);
         if (list[0]?.id) {
           setShiftBranch(list[0].id);

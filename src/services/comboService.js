@@ -1,8 +1,20 @@
 import api from './api.js';
+import { fetchAllPages } from '../utils/fetchAllPages.js';
 
 export const fetchComboStats = (params) => api.get('/combos/stats', { params });
 
 export const fetchCombos = (params) => api.get('/combos', { params });
+
+/** Load every page of combos (API caps at 100 per page). */
+export async function fetchAllCombos(params = {}) {
+  return fetchAllPages(async (page, limit) => {
+    const { data } = await fetchCombos({ ...params, page, limit });
+    return {
+      items: data.data.combos || [],
+      pages: data.data.pagination?.pages || 1,
+    };
+  });
+}
 
 export const fetchCombo = (id) => api.get(`/combos/${id}`);
 

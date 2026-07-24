@@ -8,7 +8,7 @@ import {
   previewPayloadFromForm,
 } from '../../utils/comboFormHelpers.js';
 import useComboBasePath, { useCanManageCombos } from '../../hooks/useComboBasePath.js';
-import { fetchProducts } from '../../services/productService.js';
+import { fetchAllProducts } from '../../services/productService.js';
 import {
   createCombo,
   updateCombo,
@@ -37,8 +37,8 @@ function ComboFormPage() {
   }, [canManage, basePath, navigate]);
 
   useEffect(() => {
-    fetchProducts({ limit: 100, status: 'active' })
-      .then(({ data }) => setProducts(data.data.products))
+    fetchAllProducts({ status: 'active' })
+      .then(setProducts)
       .catch(() => setProducts([]));
   }, []);
 

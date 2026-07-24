@@ -13,7 +13,7 @@ import useFilterPageEffect from '../../hooks/useFilterPageEffect.js';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
+import { fetchAllBranches } from '../../services/branchService.js';
 import { formatBranchDisplay, formatBranchOptionLabel } from '../../utils/branchHelpers.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 import { exportRentalJobReport, fetchRentalJobReport } from '../../services/reportService.js';
@@ -89,8 +89,8 @@ function RentalJobReportPage() {
 
   useEffect(() => {
     if (!isSuperAdmin) return;
-    fetchBranches({ limit: 100 })
-      .then(({ data }) => setBranches(data.data.branches || []))
+    fetchAllBranches()
+      .then(setBranches)
       .catch(() => setBranches([]));
   }, [isSuperAdmin]);
 

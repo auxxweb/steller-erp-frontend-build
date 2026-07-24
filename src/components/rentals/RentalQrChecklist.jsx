@@ -3,7 +3,7 @@ import QrScanModal from '../qr/QrScanModal.jsx';
 import Button from '../ui/Button.jsx';
 import RentalUnitSelector from './RentalUnitSelector.jsx';
 import { verifyQr } from '../../services/qrService.js';
-import { fetchProductUnits } from '../../services/productService.js';
+import { fetchAllProductUnits } from '../../services/productService.js';
 import {
   buildPickupChecklistSlots,
   getRentalItemId,
@@ -76,12 +76,12 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
     const productIds = pendingProductIdsKey.split(',').filter(Boolean);
 
     productIds.forEach((productId) => {
-      fetchProductUnits(productId, { limit: 100 })
-        .then(({ data }) => {
+      fetchAllProductUnits(productId)
+        .then((units) => {
           if (cancelled) return;
           setUnitsByProduct((prev) => {
             if (prev[productId]) return prev;
-            return { ...prev, [productId]: data.data.units || [] };
+            return { ...prev, [productId]: units };
           });
         })
         .catch(() => {

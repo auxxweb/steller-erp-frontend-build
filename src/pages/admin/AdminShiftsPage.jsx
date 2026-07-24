@@ -3,7 +3,7 @@ import Card from '../../components/ui/Card.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
-import { fetchBranches } from '../../services/branchService.js';
+import { fetchAllBranches } from '../../services/branchService.js';
 import { createShift, fetchShifts } from '../../services/shiftService.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
@@ -41,9 +41,8 @@ function AdminShiftsPage() {
   const setField = (k, v) => setForm((s) => ({ ...s, [k]: v }));
 
   useEffect(() => {
-    fetchBranches({ limit: 100 })
-      .then((r) => {
-        const list = r.data.data.branches || [];
+    fetchAllBranches()
+      .then((list) => {
         setBranches(list);
         if (!branch && list[0]?.id) setBranch(list[0].id);
       })

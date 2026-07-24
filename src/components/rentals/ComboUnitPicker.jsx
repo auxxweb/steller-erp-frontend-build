@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import QrScanModal from '../qr/QrScanModal.jsx';
 import RentalUnitSelector from './RentalUnitSelector.jsx';
-import { fetchProductUnits } from '../../services/productService.js';
+import { fetchAllProductUnits } from '../../services/productService.js';
 import { verifyQr } from '../../services/qrService.js';
 import { buildComboUnitSlots } from '../../utils/comboUnitHelpers.js';
 import { toast } from '../../lib/toastStore.js';
@@ -25,12 +25,12 @@ function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }
     if (isPrebook || !productIdsKey) return undefined;
     let cancelled = false;
     productIdsKey.split(',').filter(Boolean).forEach((productId) => {
-      fetchProductUnits(productId, { limit: 100 })
-        .then(({ data }) => {
+      fetchAllProductUnits(productId)
+        .then((units) => {
           if (cancelled) return;
           setUnitsByProduct((prev) => ({
             ...prev,
-            [productId]: data.data.units || [],
+            [productId]: units,
           }));
         })
         .catch(() => {

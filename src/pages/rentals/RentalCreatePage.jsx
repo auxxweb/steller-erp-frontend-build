@@ -13,7 +13,7 @@ import AvailabilityBars from '../../components/rentals/AvailabilityBars.jsx';
 import useRentalBasePath, { useCanWriteRentals } from '../../hooks/useRentalBasePath.js';
 import useAuth from '../../hooks/useAuth.js';
 import { ROLES } from '../../utils/constants.js';
-import { fetchBranches } from '../../services/branchService.js';
+import { fetchAllBranches } from '../../services/branchService.js';
 import { formatBranchOptionLabel } from '../../utils/branchHelpers.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
 import { createCustomer, lookupCustomerIdentity } from '../../services/customerService.js';
@@ -21,8 +21,8 @@ import RentalCustomerPicker, {
   RENTAL_CUSTOMER_MODES,
 } from '../../components/rentals/RentalCustomerPicker.jsx';
 import { fetchAllProducts } from '../../services/productService.js';
-import { fetchCategories } from '../../services/categoryService.js';
-import { fetchCombos } from '../../services/comboService.js';
+import { fetchAllCategories } from '../../services/categoryService.js';
+import { fetchAllCombos } from '../../services/comboService.js';
 import { checkRentalAvailability, createRental } from '../../services/rentalService.js';
 import {
   RENTAL_TYPE,
@@ -105,8 +105,8 @@ function RentalCreatePage() {
   }, [isDirect]);
 
   useEffect(() => {
-    fetchCategories({ limit: 100, status: 'active' })
-      .then(({ data }) => setCategories(data.data.categories || []))
+    fetchAllCategories({ status: 'active' })
+      .then(setCategories)
       .catch(() => setCategories([]));
   }, []);
 
@@ -120,18 +120,18 @@ function RentalCreatePage() {
       .then(setProducts)
       .catch(() => setProducts([]));
     if (isSuperAdmin) {
-      fetchBranches({ limit: 100 })
-        .then(({ data }) => setBranches(data.data.branches))
+      fetchAllBranches()
+        .then(setBranches)
         .catch(() => setBranches([]));
     }
   }, []);
 
   useEffect(() => {
-    const params = { limit: 100, status: 'active' };
+    const params = { status: 'active' };
     const rentalBranch = isSuperAdmin ? branch : effectiveBranchId;
     if (rentalBranch) params.branch = rentalBranch;
-    fetchCombos(params)
-      .then(({ data }) => setCombos(data.data.combos))
+    fetchAllCombos(params)
+      .then(setCombos)
       .catch(() => setCombos([]));
   }, [isSuperAdmin, branch, effectiveBranchId]);
 
