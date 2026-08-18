@@ -7,7 +7,7 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalListFilters from '../../components/rentals/RentalListFilters.jsx';
 import RentalQueuePicker from '../../components/rentals/RentalQueuePicker.jsx';
-import RentalQrChecklist from '../../components/rentals/RentalQrChecklist.jsx';
+import RentalReturnChecklist from '../../components/rentals/RentalReturnChecklist.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
 import useRentalList from '../../hooks/useRentalList.js';
@@ -16,6 +16,7 @@ import { RETURN_STATUSES, RENTAL_STATUS_OPTIONS } from '../../utils/rentalConsta
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
+import Modal from '../../components/ui/Modal.jsx';
 
 const RETURN_STATUS_OPTIONS = RENTAL_STATUS_OPTIONS.filter((opt) =>
   RETURN_STATUSES.includes(opt.value),
@@ -28,7 +29,13 @@ function RentalReturnPage() {
   const [detail, setDetail] = useState(null);
   const [sendToMaintenance, setSendToMaintenance] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [scansReady, setScansReady] = useState(false);
+  const [verification, setVerification] = useState({
+    allScanned: false,
+    scannedCount: 0,
+    total: 0,
+  });
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [returnNotes, setReturnNotes] = useState('');
 
   const {
     rentals: queue,
@@ -59,7 +66,9 @@ function RentalReturnPage() {
   });
 
   useEffect(() => {
-    setScansReady(false);
+    setVerification({ allScanned: false, scannedCount: 0, total: 0 });
+    setReturnNotes('');
+    setNotesOpen(false);
   }, [selectedId]);
 
   useEffect(() => {
@@ -82,22 +91,25 @@ function RentalReturnPage() {
     };
   }, [selectedId]);
 
-  const handleScannedChange = useCallback((_scannedIds, ready) => {
-    setScansReady(Boolean(ready));
+  const handleVerificationChange = useCallback((next) => {
+    setVerification(next);
   }, []);
 
-  const handleReturn = async () => {
-    if (!selectedId || !scansReady) return;
+  const submitReturn = async ({ verifiedByScan, notes }) => {
+    if (!selectedId) return;
     setSubmitting(true);
     try {
       const { data } = await returnRental(selectedId, {
         sendUnitsToMaintenance: sendToMaintenance,
+        verifiedByScan,
+        notes,
       });
       toast.success(data.message || 'Return completed');
       setSelectedId('');
       setDetail(null);
       setSendToMaintenance(false);
-      setScansReady(false);
+      setNotesOpen(false);
+      setReturnNotes('');
       reload();
       goToInvoiceAfterReturn(data, { partial: data.data?.partial });
     } catch (err) {
@@ -105,6 +117,29 @@ function RentalReturnPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleConfirmReturn = () => {
+    if (!selectedId) return;
+    if (verification.allScanned) {
+      submitReturn({
+        verifiedByScan: true,
+        notes: 'Verified by QR scan',
+      });
+      return;
+    }
+    setNotesOpen(true);
+  };
+
+  const handleManualReturn = () => {
+    if (returnNotes.trim().length < 3) {
+      toast.error('Enter notes to confirm manual verification');
+      return;
+    }
+    submitReturn({
+      verifiedByScan: false,
+      notes: returnNotes.trim(),
+    });
   };
 
   return (
@@ -188,7 +223,13 @@ function RentalReturnPage() {
                 <RentalStatusBadge status={detail.rental.status} />
               </div>
 
-              <RentalQrChecklist items={detail.items || []} onScannedChange={handleScannedChange} />
+              <RentalReturnChecklist
+                items={detail.items || []}
+                onVerificationChange={handleVerificationChange}
+                startAt={detail.rental.scheduledStartAt}
+                endAt={detail.rental.scheduledEndAt}
+                excludeRentalId={detail.rental.id}
+              />
 
               <label className="flex items-center gap-stellar-2 rounded-stellar-lg border border-stellar-border bg-stellar-surface-muted/40 p-stellar-4 text-sm">
                 <input
@@ -208,17 +249,51 @@ function RentalReturnPage() {
               <Button
                 type="button"
                 className="w-full"
-                disabled={submitting || !scansReady}
-                onClick={handleReturn}
+                disabled={submitting}
+                onClick={handleConfirmReturn}
               >
                 {submitting
                   ? 'Processing…'
-                  : scansReady
-                    ? 'Confirm return & open invoice'
-                    : 'Scan all units to confirm return'}
+                  : verification.allScanned
+                    ? 'Confirm scanned return'
+                    : 'Return without scan'}
               </Button>
             </Card>
           )}
+
+          <Modal
+            open={notesOpen}
+            title="Manually verified?"
+            onClose={() => !submitting && setNotesOpen(false)}
+          >
+            <p className="mt-stellar-2 text-sm text-stellar-text-muted">
+              Serials were not scanned. Confirm you visually checked the returned gear, then add a
+              note to complete the return.
+            </p>
+            <textarea
+              className="input mt-stellar-4 min-h-[120px] w-full"
+              value={returnNotes}
+              onChange={(e) => setReturnNotes(e.target.value)}
+              placeholder="e.g. All serials checked by hand, body and lens returned…"
+            />
+            <div className="mt-stellar-4 flex justify-end gap-stellar-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={submitting}
+                onClick={() => setNotesOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={submitting || returnNotes.trim().length < 3}
+                onClick={handleManualReturn}
+              >
+                {submitting ? 'Processing…' : 'Yes, manually verified'}
+              </Button>
+            </div>
+          </Modal>
         </div>
       </div>
     </div>

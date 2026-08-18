@@ -763,6 +763,8 @@ function RentalCreatePage() {
                         onProductDiscovered={handleProductDiscovered}
                         isPrebook={isPrebook}
                         crossBranch
+                        startAt={scheduleForAdvance.scheduledStartAt}
+                        endAt={scheduleForAdvance.scheduledEndAt}
                       />
                     </div>
 
@@ -772,6 +774,8 @@ function RentalCreatePage() {
                         slots={comboUnitSlots}
                         onChange={setComboUnitSlots}
                         isPrebook={isPrebook}
+                        startAt={scheduleForAdvance.scheduledStartAt}
+                        endAt={scheduleForAdvance.scheduledEndAt}
                       />
                     )}
                   </>
@@ -786,6 +790,8 @@ function RentalCreatePage() {
                 onProductDiscovered={handleProductDiscovered}
                 isPrebook={isPrebook}
                 crossBranch
+                startAt={scheduleForAdvance.scheduledStartAt}
+                endAt={scheduleForAdvance.scheduledEndAt}
               />
             )}
 

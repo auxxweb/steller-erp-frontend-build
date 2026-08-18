@@ -7,8 +7,9 @@ import RentalNav from '../../components/rentals/RentalNav.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import RentalTimeline from '../../components/rentals/RentalTimeline.jsx';
 import useRentalBasePath, { useCanOperateRentals } from '../../hooks/useRentalBasePath.js';
-import { cancelRental, fetchRental, reserveRental } from '../../services/rentalService.js';
-import { RENTAL_STATUS, RENTAL_TYPE } from '../../utils/rentalConstants.js';
+import { cancelRental, extendRental, fetchRental, reserveRental } from '../../services/rentalService.js';
+import { RENTAL_STATUS, RENTAL_TYPE, toDatetimeLocalValue } from '../../utils/rentalConstants.js';
+import Modal from '../../components/ui/Modal.jsx';
 import { formatUnitSerialLabel } from '../../utils/productConstants.js';
 import { formatDate } from '../../utils/format.js';
 import { toast } from '../../lib/toastStore.js';
@@ -17,6 +18,12 @@ import { getApiErrorMessage } from '../../utils/userValidation.js';
 function formatMoney(val) {
   if (val == null) return '—';
   return `₹${Number(val).toLocaleString('en-IN')}`;
+}
+
+function formatStaff(user) {
+  if (!user) return '—';
+  if (typeof user === 'string') return user;
+  return user.name || user.email || '—';
 }
 
 function RentalDetailPage() {
@@ -32,6 +39,9 @@ function RentalDetailPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [reserving, setReserving] = useState(false);
+  const [extendOpen, setExtendOpen] = useState(false);
+  const [extendEndAt, setExtendEndAt] = useState('');
+  const [extending, setExtending] = useState(false);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -84,6 +94,19 @@ function RentalDetailPage() {
     !rental.actualStartAt &&
     !rental.pickedUpAt &&
     canOperate;
+  const isOutOnRent =
+    [
+      RENTAL_STATUS.ACTIVE,
+      RENTAL_STATUS.OVERDUE,
+      RENTAL_STATUS.PICKED_UP,
+      RENTAL_STATUS.PARTIALLY_RETURNED,
+    ].includes(status) &&
+    Boolean(rental.actualStartAt || rental.pickedUpAt);
+  const isOverdue =
+    status === RENTAL_STATUS.OVERDUE ||
+    (isOutOnRent && rental.scheduledEndAt && new Date(rental.scheduledEndAt) < new Date());
+  const canExtend = isOutOnRent && canOperate;
+
   const canCancelPrebook =
     isPrebook &&
     [
@@ -116,6 +139,24 @@ function RentalDetailPage() {
     }
   };
 
+  const handleExtend = async () => {
+    if (!extendEndAt) {
+      toast.error('Choose a new end date');
+      return;
+    }
+    setExtending(true);
+    try {
+      await extendRental(id, { scheduledEndAt: new Date(extendEndAt).toISOString() });
+      toast.success('Rental extended');
+      setExtendOpen(false);
+      await load();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Could not extend rental'));
+    } finally {
+      setExtending(false);
+    }
+  };
+
   const handleCancelPrebook = async () => {
     const reason = window.prompt('Reason for cancelling this pre-booking?');
     if (!reason?.trim()) return;
@@ -142,6 +183,11 @@ function RentalDetailPage() {
           <div className="mt-stellar-2 flex flex-wrap items-center gap-stellar-3">
             <h1 className="text-xl font-semibold sm:text-2xl">{rental.rentalNumber}</h1>
             <RentalStatusBadge status={status} />
+            {isOverdue && (
+              <span className="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">
+                Overdue
+              </span>
+            )}
           </div>
           <p className="mt-stellar-1 text-sm text-stellar-text-muted">
             {rental.customer?.name} · {rental.customer?.phone}
@@ -164,6 +210,23 @@ function RentalDetailPage() {
               onClick={handleReserve}
             >
               {reserving ? 'Reserving…' : 'Reserve inventory'}
+            </Button>
+          )}
+          {canExtend && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="btn-md"
+              onClick={() => {
+                const currentEnd = rental.scheduledEndAt
+                  ? new Date(rental.scheduledEndAt)
+                  : new Date();
+                const next = new Date(currentEnd.getTime() + 24 * 60 * 60 * 1000);
+                setExtendEndAt(toDatetimeLocalValue(next));
+                setExtendOpen(true);
+              }}
+            >
+              Extend rental
             </Button>
           )}
           {canGoToPickup && (
@@ -269,6 +332,33 @@ function RentalDetailPage() {
         </Card>
       </div>
 
+      <Card variant="muted" className="!p-stellar-5">
+        <h2 className="text-sm font-semibold">Handled by</h2>
+        <dl className="mt-stellar-4 grid gap-stellar-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-stellar-text-muted">Created</dt>
+            <dd className="font-medium">{formatStaff(rental.createdBy || rental.handledBy)}</dd>
+          </div>
+          <div>
+            <dt className="text-stellar-text-muted">Pickup</dt>
+            <dd className="font-medium">{formatStaff(rental.pickedUpBy)}</dd>
+          </div>
+          <div>
+            <dt className="text-stellar-text-muted">Return</dt>
+            <dd className="font-medium">{formatStaff(rental.returnedBy)}</dd>
+          </div>
+          <div>
+            <dt className="text-stellar-text-muted">Invoice</dt>
+            <dd className="font-medium">{formatStaff(rental.invoice?.createdBy)}</dd>
+          </div>
+        </dl>
+        {rental.returnNotes && (
+          <p className="mt-stellar-3 text-sm text-stellar-text-muted">
+            Return notes: {rental.returnNotes}
+          </p>
+        )}
+      </Card>
+
       <Card className="!p-0 overflow-hidden">
         <div className="border-b border-stellar-border p-stellar-4">
           <h2 className="text-sm font-semibold">Line items</h2>
@@ -300,6 +390,38 @@ function RentalDetailPage() {
           <RentalTimeline rentalId={id} />
         </div>
       </Card>
+
+      <Modal
+        open={extendOpen}
+        title="Extend rental"
+        onClose={() => !extending && setExtendOpen(false)}
+      >
+        <p className="mt-stellar-2 text-sm text-stellar-text-muted">
+          Choose a later return time. Availability is checked for the extra window so overlapping
+          bookings are not double-booked.
+        </p>
+        {isOverdue && (
+          <p className="mt-stellar-2 text-sm font-medium text-red-600">This job is currently overdue.</p>
+        )}
+        <label className="form-label mt-stellar-4" htmlFor="extend-end">
+          New end
+        </label>
+        <input
+          id="extend-end"
+          type="datetime-local"
+          className="input w-full"
+          value={extendEndAt}
+          onChange={(e) => setExtendEndAt(e.target.value)}
+        />
+        <div className="mt-stellar-4 flex justify-end gap-stellar-2">
+          <Button type="button" variant="secondary" disabled={extending} onClick={() => setExtendOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={extending || !extendEndAt} onClick={handleExtend}>
+            {extending ? 'Saving…' : 'Confirm extension'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

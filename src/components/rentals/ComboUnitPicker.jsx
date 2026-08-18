@@ -7,8 +7,17 @@ import { buildComboUnitSlots } from '../../utils/comboUnitHelpers.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
 import { UNIT_STATUS_LABELS, formatUnitSerialLabel } from '../../utils/productConstants.js';
+import { isUnitAssignable, unitUnavailableReason } from '../../utils/unitAssignable.js';
 
-function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }) {
+function ComboUnitPicker({
+  comboItems = [],
+  slots,
+  onChange,
+  isPrebook = false,
+  startAt = null,
+  endAt = null,
+  excludeRentalId = null,
+}) {
   const [unitsByProduct, setUnitsByProduct] = useState({});
   const [scanOpen, setScanOpen] = useState(false);
   const [scanTargetKey, setScanTargetKey] = useState(null);
@@ -25,7 +34,11 @@ function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }
     if (isPrebook || !productIdsKey) return undefined;
     let cancelled = false;
     productIdsKey.split(',').filter(Boolean).forEach((productId) => {
-      fetchAllProductUnits(productId)
+      fetchAllProductUnits(productId, {
+        startAt: startAt || undefined,
+        endAt: endAt || undefined,
+        excludeRentalId: excludeRentalId || undefined,
+      })
         .then((units) => {
           if (cancelled) return;
           setUnitsByProduct((prev) => ({
@@ -69,7 +82,7 @@ function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }
       return;
     }
     try {
-      const { data } = await verifyQr(value.trim());
+      const { data } = await verifyQr(value.trim(), { startAt, endAt, excludeRentalId });
       const unit = data.data?.unit;
       if (!unit?.id) {
         toast.error('Invalid QR code');
@@ -80,8 +93,8 @@ function ComboUnitPicker({ comboItems = [], slots, onChange, isPrebook = false }
         toast.error('This QR does not match this product');
         return;
       }
-      if (unit.status !== 'available') {
-        toast.error(`Unit is ${UNIT_STATUS_LABELS[unit.status] || unit.status}`);
+      if (!isUnitAssignable(unit, { allowReserved: true })) {
+        toast.error(unitUnavailableReason(unit) || `Unit is ${UNIT_STATUS_LABELS[unit.status] || unit.status}`);
         return;
       }
       const taken = activeSlots.some(

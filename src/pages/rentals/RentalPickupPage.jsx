@@ -12,7 +12,9 @@ import RentalQrChecklist from '../../components/rentals/RentalQrChecklist.jsx';
 import RentalStatusBadge from '../../components/rentals/RentalStatusBadge.jsx';
 import useRentalBasePath from '../../hooks/useRentalBasePath.js';
 import useRentalList from '../../hooks/useRentalList.js';
-import { fetchRental, pickupRental } from '../../services/rentalService.js';
+import { fetchRental, pickupRental, replacePickupItems } from '../../services/rentalService.js';
+import { fetchAllProducts } from '../../services/productService.js';
+import PickupItemsEditor from '../../components/rentals/PickupItemsEditor.jsx';
 import {
   PICKUP_STATUSES,
   PREBOOK_PICKUP_QUEUE_STATUSES,
@@ -34,6 +36,8 @@ function RentalPickupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [scansReady, setScansReady] = useState(false);
   const [unitAssignments, setUnitAssignments] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [savingItems, setSavingItems] = useState(false);
 
   useEffect(() => {
     if (location.state?.selectedId) {
@@ -76,6 +80,12 @@ function RentalPickupPage() {
   }, [selectedId]);
 
   useEffect(() => {
+    fetchAllProducts({ status: 'active' })
+      .then(setProducts)
+      .catch(() => setProducts([]));
+  }, []);
+
+  useEffect(() => {
     if (!selectedId) {
       setDetail(null);
       return;
@@ -97,6 +107,28 @@ function RentalPickupPage() {
   const handleScannedChange = useCallback((_scannedIds, ready) => {
     setScansReady(Boolean(ready));
   }, []);
+
+  const reloadDetail = async () => {
+    if (!selectedId) return;
+    const { data } = await fetchRental(selectedId);
+    setDetail(data.data);
+    setUnitAssignments([]);
+    setScansReady(false);
+  };
+
+  const handleSaveItems = async (items) => {
+    if (!selectedId) return;
+    setSavingItems(true);
+    try {
+      await replacePickupItems(selectedId, { items });
+      toast.success('Pickup products updated');
+      await reloadDetail();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Could not update products'));
+    } finally {
+      setSavingItems(false);
+    }
+  };
 
   const handlePickup = async () => {
     if (!selectedId || !scansReady) return;
@@ -198,10 +230,21 @@ function RentalPickupPage() {
                 <RentalStatusBadge status={detail.rental.status} />
               </div>
 
+              <PickupItemsEditor
+                key={(detail.items || []).map((i) => i.id).join(',')}
+                items={detail.items || []}
+                products={products}
+                onSave={handleSaveItems}
+                saving={savingItems}
+              />
+
               <RentalQrChecklist
                 items={detail.items || []}
                 onScannedChange={handleScannedChange}
                 onAssignmentsChange={setUnitAssignments}
+                startAt={detail.rental.scheduledStartAt}
+                endAt={detail.rental.scheduledEndAt}
+                excludeRentalId={detail.rental.id}
               />
 
               <Button

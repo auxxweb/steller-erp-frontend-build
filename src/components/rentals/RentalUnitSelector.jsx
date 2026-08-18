@@ -2,6 +2,7 @@ import Button from '../ui/Button.jsx';
 import SearchableSelect from '../ui/SearchableSelect.jsx';
 import { UNIT_STATUS_LABELS, formatUnitSerialLabel, unitSerialKeywords } from '../../utils/productConstants.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
+import { isUnitAssignable } from '../../utils/unitAssignable.js';
 
 function RentalUnitSelector({
   units = [],
@@ -30,7 +31,7 @@ function RentalUnitSelector({
         disabledUnitIds.has(unit.id?.toString());
       return {
         ...opt,
-        disabled: unit?.status !== 'available' || taken,
+        disabled: (unit && !isUnitAssignable(unit, { allowReserved: true })) || taken,
       };
     }),
     'Select serial',

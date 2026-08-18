@@ -32,3 +32,7 @@ export const maintenanceRental = (id, payload = {}) =>
 export const fetchRentalTimeline = (id) => api.get(`/rentals/${id}/timeline`);
 
 export const closeRental = (id, payload = {}) => api.post(`/rentals/${id}/close`, payload);
+
+export const extendRental = (id, payload) => api.post(`/rentals/${id}/extend`, payload);
+
+export const replacePickupItems = (id, payload) => api.patch(`/rentals/${id}/items`, payload);

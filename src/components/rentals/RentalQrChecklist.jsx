@@ -11,6 +11,7 @@ import {
 import { formatUnitSerialLabel } from '../../utils/productConstants.js';
 import { toast } from '../../lib/toastStore.js';
 import { getApiErrorMessage } from '../../utils/userValidation.js';
+import { isUnitAssignable, unitUnavailableReason } from '../../utils/unitAssignable.js';
 
 function assignmentsToRows(assignments, slots) {
   return Object.entries(assignments)
@@ -24,7 +25,14 @@ function assignmentsToRows(assignments, slots) {
     });
 }
 
-function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange }) {
+function RentalQrChecklist({
+  items = [],
+  onScannedChange,
+  onAssignmentsChange,
+  startAt = null,
+  endAt = null,
+  excludeRentalId = null,
+}) {
   const [scanOpen, setScanOpen] = useState(false);
   const [scannedIds, setScannedIds] = useState(() => new Set());
   const [assignments, setAssignments] = useState({});
@@ -57,46 +65,45 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
     [items],
   );
 
-  const pendingProductIdsKey = useMemo(
+  const allProductIdsKey = useMemo(
     () =>
       [
         ...new Set(
-          pendingSlots
+          slots
             .map((s) => s.item.product?.id || s.item.product?._id || s.item.product)
             .filter(Boolean)
             .map((id) => id.toString()),
         ),
       ].join(','),
-    [pendingSlots],
+    [slots],
   );
 
   useEffect(() => {
-    if (!pendingProductIdsKey) return undefined;
+    if (!allProductIdsKey) return undefined;
     let cancelled = false;
-    const productIds = pendingProductIdsKey.split(',').filter(Boolean);
+    const productIds = allProductIdsKey.split(',').filter(Boolean);
+    const windowParams = {
+      startAt: startAt || undefined,
+      endAt: endAt || undefined,
+      excludeRentalId: excludeRentalId || undefined,
+    };
 
     productIds.forEach((productId) => {
-      fetchAllProductUnits(productId)
+      fetchAllProductUnits(productId, windowParams)
         .then((units) => {
           if (cancelled) return;
-          setUnitsByProduct((prev) => {
-            if (prev[productId]) return prev;
-            return { ...prev, [productId]: units };
-          });
+          setUnitsByProduct((prev) => ({ ...prev, [productId]: units }));
         })
         .catch(() => {
           if (cancelled) return;
-          setUnitsByProduct((prev) => {
-            if (prev[productId]) return prev;
-            return { ...prev, [productId]: [] };
-          });
+          setUnitsByProduct((prev) => ({ ...prev, [productId]: [] }));
         });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [pendingProductIdsKey]);
+  }, [allProductIdsKey, startAt, endAt, excludeRentalId]);
 
   useEffect(() => {
     setAssignments({});
@@ -159,10 +166,14 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
   const handleScan = useCallback(
     async (value, targetSlot = null) => {
       try {
-        const { data } = await verifyQr(value.trim());
+        const { data } = await verifyQr(value.trim(), { startAt, endAt, excludeRentalId });
         const unit = data.data?.unit;
         if (!unit?.id) {
           toast.error('Invalid QR code');
+          return;
+        }
+        if (!isUnitAssignable(unit, { allowReserved: true })) {
+          toast.error(unitUnavailableReason(unit) || 'This serial is not available');
           return;
         }
 
@@ -221,13 +232,16 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
 
   const allPreassignedScanned =
     preassignedSlots.length === 0 ||
-    preassignedSlots.every((slot) => scannedIds.has(slot.unitId));
+    preassignedSlots.every((slot) => {
+      const selected = assignments[slot.slotKey] || slot.unitId;
+      return Boolean(selected) && (scannedIds.has(String(selected)) || scannedIds.has(slot.unitId));
+    });
 
   const allReady = allPendingAssigned && allPreassignedScanned;
 
   useEffect(() => {
     onScannedChangeRef.current?.(scannedIds, allReady);
-  }, [scannedIds, allReady]);
+  }, [scannedIds, allReady, assignments]);
 
   const scanTargetSlot =
     pendingSlots.find((s) => s.slotKey === scanTargetSlotKey) ||
@@ -341,46 +355,48 @@ function RentalQrChecklist({ items = [], onScannedChange, onAssignmentsChange })
       {preassignedSlots.length > 0 && (
         <ul className="divide-y divide-stellar-border rounded-stellar-lg border border-stellar-border">
           {preassignedSlots.map((slot) => {
-            const done = scannedIds.has(slot.unitId);
+            const productId = slot.item.product?.id || slot.item.product?._id || slot.item.product;
+            const productIdStr = productId?.toString?.() || '';
+            const units = unitsByProduct[productIdStr] || [];
+            const selected = assignments[slot.slotKey] || slot.unitId || '';
+            const done = scannedIds.has(String(selected)) || scannedIds.has(slot.unitId);
+            const slotDisabledIds = new Set(disabledUnitIds);
+            if (selected) slotDisabledIds.delete(String(selected));
+
             return (
-              <li
-                key={slot.slotKey}
-                className="flex flex-col gap-stellar-3 p-stellar-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-stellar-text">
-                    {slot.item.product?.name || 'Product'}
-                  </p>
-                  {slot.item.combo?.name ? (
-                    <p className="text-[10px] uppercase tracking-wide text-stellar-text-muted">
-                      Combo · {slot.item.combo.name}
+              <li key={slot.slotKey} className="space-y-stellar-3 p-stellar-3">
+                <div className="flex flex-col gap-stellar-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-stellar-text">
+                      {slot.item.product?.name || 'Product'}
                     </p>
-                  ) : null}
-                  <p className="font-mono text-xs text-stellar-text-muted">
-                    {slot.serialLabel || slot.unitId}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-stellar-2">
+                    {slot.item.combo?.name ? (
+                      <p className="text-[10px] uppercase tracking-wide text-stellar-text-muted">
+                        Combo · {slot.item.combo.name}
+                      </p>
+                    ) : null}
+                  </div>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                       done
                         ? 'bg-emerald-500/15 text-emerald-700'
                         : 'bg-amber-500/15 text-amber-700'
                     }`}
                   >
-                    {done ? 'Scanned' : 'Awaiting scan'}
+                    {done ? 'Ready' : 'Confirm serial'}
                   </span>
-                  {!done && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => openScan(slot.slotKey)}
-                    >
-                      Scan
-                    </Button>
-                  )}
                 </div>
+                <RentalUnitSelector
+                  units={units}
+                  selectedId={selected}
+                  disabledUnitIds={slotDisabledIds}
+                  onSelect={(unitId) => {
+                    setSlotAssignment(slot.slotKey, unitId || slot.unitId);
+                    if (unitId) markScanned(unitId);
+                  }}
+                  onScan={() => openScan(slot.slotKey)}
+                  label="Serial (scan or change)"
+                />
               </li>
             );
           })}

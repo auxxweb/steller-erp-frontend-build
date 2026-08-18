@@ -11,6 +11,7 @@ import { RATE_TYPE_OPTIONS } from '../../utils/rentalConstants.js';
 import { UNIT_STATUS_LABELS, formatUnitSerialLabel, unitSerialKeywords } from '../../utils/productConstants.js';
 import { formatBranchDisplay } from '../../utils/branchHelpers.js';
 import { toSelectOptions, withEmptyOption } from '../../utils/selectOptions.js';
+import { isUnitAssignable, unitUnavailableReason } from '../../utils/unitAssignable.js';
 
 const OBJECT_ID_RE = /^[a-f\d]{24}$/i;
 
@@ -71,6 +72,9 @@ function RentalProductPicker({
   onProductDiscovered,
   isPrebook = false,
   crossBranch = false,
+  startAt = null,
+  endAt = null,
+  excludeRentalId = null,
 }) {
   const [unitsByProduct, setUnitsByProduct] = useState({});
   const [loadingProducts, setLoadingProducts] = useState(() => new Set());
@@ -82,7 +86,11 @@ function RentalProductPicker({
 
     setLoadingProducts((prev) => new Set(prev).add(key));
     try {
-      const units = await fetchAllProductUnits(key);
+      const units = await fetchAllProductUnits(key, {
+        startAt: startAt || undefined,
+        endAt: endAt || undefined,
+        excludeRentalId: excludeRentalId || undefined,
+      });
       setUnitsByProduct((prev) => ({
         ...prev,
         [key]: units,
@@ -99,10 +107,14 @@ function RentalProductPicker({
   };
 
   useEffect(() => {
+    setUnitsByProduct({});
+  }, [startAt, endAt, excludeRentalId]);
+
+  useEffect(() => {
     if (isPrebook) return;
     const ids = [...new Set(lines.map((l) => l.product).filter(Boolean))];
-    ids.forEach((id) => loadUnits(id));
-  }, [isPrebook, lines.map((l) => l.product).join(',')]);
+    ids.forEach((id) => loadUnits(id, { force: true }));
+  }, [isPrebook, lines.map((l) => l.product).join(','), startAt, endAt, excludeRentalId]);
 
   const productsForCategory = (categoryId) => {
     if (!categoryId) return [];
@@ -162,8 +174,8 @@ function RentalProductPicker({
       toast.error('Could not resolve category for this product');
       return false;
     }
-    if (unit.status !== 'available') {
-      toast.error(`Unit is ${UNIT_STATUS_LABELS[unit.status] || unit.status}`);
+    if (!isUnitAssignable(unit)) {
+      toast.error(unitUnavailableReason(unit) || `Unit is ${UNIT_STATUS_LABELS[unit.status] || unit.status}`);
       return false;
     }
     if (
@@ -216,7 +228,7 @@ function RentalProductPicker({
   const handleQuickScanForLine = async (index, value) => {
     if (index == null || index < 0) return;
     try {
-      const { data } = await verifyQr(value.trim());
+      const { data } = await verifyQr(value.trim(), { startAt, endAt, excludeRentalId });
       const unit = data.data?.unit;
       if (!unit?.id) {
         toast.error('Invalid QR code');
@@ -391,7 +403,7 @@ function RentalProductPicker({
                         value: u.id,
                         label: `${formatUnitSerialLabel(u)}${crossBranch && u.branch ? ` @ ${formatBranchDisplay(u.branch)}` : ''} — ${UNIT_STATUS_LABELS[u.status] || u.status}`,
                         keywords: unitSerialKeywords(u),
-                        disabled: u.status !== 'available',
+                        disabled: !isUnitAssignable(u),
                       })),
                       'Select serial',
                     )}
