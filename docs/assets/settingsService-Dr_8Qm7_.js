@@ -1,1 +1,0 @@
-import{n as e}from"./Card-D7Si8CNI.js";var t=()=>e.get(`/settings`),n=t=>e.patch(`/settings/branch`,t),r=t=>e.patch(`/settings/organization`,t);export{n,r,t};
