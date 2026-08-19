@@ -5,6 +5,7 @@ export const UPLOAD_ENDPOINTS = {
   userDocuments: '/uploads/users/documents',
   maintenance: '/uploads/maintenance',
   categories: '/uploads/categories',
+  attendance: '/uploads/attendance',
   delete: '/uploads',
 };
 

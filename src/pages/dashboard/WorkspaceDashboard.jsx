@@ -5,6 +5,7 @@ import DashboardTabs from '../../components/dashboard/DashboardTabs.jsx';
 import QuickActionsGrid from '../../components/dashboard/QuickActionsGrid.jsx';
 import ActivityFeed from '../../components/dashboard/ActivityFeed.jsx';
 import DashboardCharts from '../../components/dashboard/DashboardCharts.jsx';
+import DashboardDateFilter from '../../components/dashboard/DashboardDateFilter.jsx';
 import AttendancePunchPanel from '../../components/attendance/AttendancePunchPanel.jsx';
 import { KPI_CARD_STYLES } from '../../components/dashboard/charts/chartColors.js';
 import useAuth from '../../hooks/useAuth.js';
@@ -35,6 +36,9 @@ function WorkspaceDashboard({ title }) {
   const [tab, setTab] = useState('overview');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('this_month');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const quickActions = useMemo(() => getDashboardQuickActions(role), [role]);
   const showSales = Boolean(data?.features?.sales);
@@ -43,11 +47,17 @@ function WorkspaceDashboard({ title }) {
   const showPunchPanel = role === ROLES.EMPLOYEE || role === ROLES.BRANCH_ADMIN;
 
   useEffect(() => {
+    if (period === 'custom' && (!dateFrom || !dateTo)) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        const res = await fetchWorkspaceDashboard();
+        const params = { period };
+        if (period === 'custom') {
+          params.from = dateFrom;
+          params.to = dateTo;
+        }
+        const res = await fetchWorkspaceDashboard(params);
         if (!cancelled) setData(res.data.data);
       } catch (err) {
         if (!cancelled) {
@@ -61,7 +71,7 @@ function WorkspaceDashboard({ title }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [period, dateFrom, dateTo]);
 
   const activityLink = (item) => {
     if (item.type === 'rental') return `${basePath}/rentals/${item.entityId}`;
@@ -94,6 +104,23 @@ function WorkspaceDashboard({ title }) {
           {role === ROLES.EMPLOYEE && ' — branch jobs and invoices shared with your team.'}
         </p>
       </div>
+
+      {tab === 'overview' && (
+        <DashboardDateFilter
+          period={period}
+          onPeriodChange={(value) => {
+            setPeriod(value);
+            if (value !== 'custom') {
+              setDateFrom('');
+              setDateTo('');
+            }
+          }}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
+        />
+      )}
 
       <DashboardTabs tabs={tabs} active={tab} onChange={setTab} />
 
@@ -129,6 +156,11 @@ function WorkspaceDashboard({ title }) {
                       <p className={cn('mt-stellar-1 text-2xl font-semibold tabular-nums', accent.value)}>
                         {formatKpi(kpi)}
                       </p>
+                      {kpi.hint && (
+                        <p className="mt-stellar-2 text-xs leading-snug text-stellar-text-muted">
+                          {kpi.hint}
+                        </p>
+                      )}
                     </Card>
                   );
 

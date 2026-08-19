@@ -8,5 +8,6 @@ export const fetchMyAttendance = ({ year, month }) =>
 
 export const fetchTodayPunchStatus = (config) => api.get('/attendance/today', config);
 
-export const punchAttendance = (action) => api.post('/attendance/punch', { action });
+export const punchAttendance = (action, extras = {}) =>
+  api.post('/attendance/punch', { action, ...extras });
 

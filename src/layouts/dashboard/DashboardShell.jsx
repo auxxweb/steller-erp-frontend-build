@@ -4,6 +4,7 @@ import Sidebar from '../../components/dashboard/Sidebar.jsx';
 import DashboardNavbar from '../../components/dashboard/DashboardNavbar.jsx';
 import MobileDrawer from '../../components/dashboard/MobileDrawer.jsx';
 import PageLoadingFallback from '../../components/ui/PageLoadingFallback.jsx';
+import LocationPermissionGate from '../../components/attendance/LocationPermissionGate.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import useUiStore from '../../store/uiStore.js';
 import { ROLE_NAV_ITEMS } from '../../routes/config/routeConfig.js';
@@ -66,6 +67,7 @@ function DashboardShell({ role }) {
             <Suspense fallback={<PageLoadingFallback />}>
               <Outlet context={{ role, workspace, user }} />
             </Suspense>
+            <LocationPermissionGate role={role} />
           </div>
         </main>
       </div>

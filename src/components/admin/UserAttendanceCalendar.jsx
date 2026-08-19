@@ -236,6 +236,34 @@ function UserAttendanceCalendar({ month, records = [], onMonthChange, loading })
               </div>
             )}
           </dl>
+          {(selectedRecord.punchInPhoto?.url || selectedRecord.punchOutPhoto?.url) && (
+            <div className="mt-stellar-4 grid gap-stellar-3 sm:grid-cols-2">
+              {selectedRecord.punchInPhoto?.url && (
+                <figure>
+                  <p className="mb-stellar-1 text-xs font-medium text-stellar-text-muted">Punch-in photo</p>
+                  <a href={selectedRecord.punchInPhoto.url} target="_blank" rel="noreferrer">
+                    <img
+                      src={selectedRecord.punchInPhoto.thumbnailUrl || selectedRecord.punchInPhoto.url}
+                      alt="Punch in"
+                      className="h-40 w-full rounded-stellar-lg object-cover"
+                    />
+                  </a>
+                </figure>
+              )}
+              {selectedRecord.punchOutPhoto?.url && (
+                <figure>
+                  <p className="mb-stellar-1 text-xs font-medium text-stellar-text-muted">Punch-out photo</p>
+                  <a href={selectedRecord.punchOutPhoto.url} target="_blank" rel="noreferrer">
+                    <img
+                      src={selectedRecord.punchOutPhoto.thumbnailUrl || selectedRecord.punchOutPhoto.url}
+                      alt="Punch out"
+                      className="h-40 w-full rounded-stellar-lg object-cover"
+                    />
+                  </a>
+                </figure>
+              )}
+            </div>
+          )}
         </div>
       )}
 

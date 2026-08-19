@@ -314,6 +314,186 @@ function OrganizationGstSettingsForm({ organization, onSaved }) {
   );
 }
 
+const RADIUS_PRESETS = [
+  { label: '50 m', value: 50 },
+  { label: '100 m', value: 100 },
+  { label: '250 m', value: 250 },
+  { label: '500 m', value: 500 },
+  { label: '1 km', value: 1000 },
+  { label: '2 km', value: 2000 },
+];
+
+function OrganizationAttendanceGeoForm({ organization, onSaved }) {
+  const [form, setForm] = useState({
+    geoFenceEnabled: Boolean(organization?.attendance?.geoFenceEnabled),
+    locationLabel: organization?.attendance?.locationLabel ?? '',
+    latitude: organization?.attendance?.latitude ?? '',
+    longitude: organization?.attendance?.longitude ?? '',
+    radiusMeters: organization?.attendance?.radiusMeters ?? 100,
+  });
+  const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+
+  useEffect(() => {
+    if (!organization) return;
+    setForm({
+      geoFenceEnabled: Boolean(organization.attendance?.geoFenceEnabled),
+      locationLabel: organization.attendance?.locationLabel ?? '',
+      latitude: organization.attendance?.latitude ?? '',
+      longitude: organization.attendance?.longitude ?? '',
+      radiusMeters: organization.attendance?.radiusMeters ?? 100,
+    });
+  }, [organization]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Location is not supported in this browser');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm((f) => ({
+          ...f,
+          geoFenceEnabled: true,
+          latitude: Number(position.coords.latitude.toFixed(6)),
+          longitude: Number(position.coords.longitude.toFixed(6)),
+        }));
+        setLocating(false);
+        toast.success('Location captured and photo punch turned on');
+      },
+      (err) => {
+        setLocating(false);
+        toast.error(err.message || 'Could not read current location');
+      },
+      { enableHighAccuracy: true, timeout: 20000 },
+    );
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const latitude = form.latitude === '' ? null : Number(form.latitude);
+    const longitude = form.longitude === '' ? null : Number(form.longitude);
+    const radiusMeters = Number(form.radiusMeters);
+
+    if (form.geoFenceEnabled) {
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        toast.error('Set a punch location before enabling the perimeter');
+        return;
+      }
+      if (!Number.isFinite(radiusMeters) || radiusMeters < 10) {
+        toast.error('Perimeter must be at least 10 metres');
+        return;
+      }
+    }
+
+    setSaving(true);
+    try {
+      const { data } = await updateOrganizationSettings({
+        attendance: {
+          geoFenceEnabled: Boolean(form.geoFenceEnabled),
+          locationLabel: String(form.locationLabel || '').trim(),
+          latitude,
+          longitude,
+          radiusMeters: Number.isFinite(radiusMeters) ? radiusMeters : 100,
+        },
+      });
+      toast.success(
+        form.geoFenceEnabled
+          ? 'Photo and location punch is now required for staff'
+          : 'Location punch turned off — staff will use the normal punch buttons',
+      );
+      onSaved?.(data.data.organization);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to save attendance location settings'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SettingsSection
+      title="Photo & location punch"
+      description="When this is on, employees and branch admins can punch in or out only inside the perimeter, after taking a shop-background photo. When it is off, the existing punch buttons work as before."
+    >
+      <form onSubmit={handleSubmit} className="max-w-xl space-y-stellar-4">
+        <label className="flex items-start gap-stellar-3 rounded-stellar-lg border border-stellar-border bg-stellar-surface-muted/40 p-stellar-4 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={form.geoFenceEnabled}
+            onChange={(e) => setForm((f) => ({ ...f, geoFenceEnabled: e.target.checked }))}
+          />
+          <span>
+            <span className="font-medium text-stellar-text">Require location and photo for punch in / out</span>
+            <span className="mt-stellar-1 block text-stellar-text-muted">
+              Staff see this only after you enable it. Breaks stay the same.
+            </span>
+          </span>
+        </label>
+        <Input
+          label="Location label"
+          value={form.locationLabel}
+          onChange={(e) => setForm((f) => ({ ...f, locationLabel: e.target.value }))}
+          hint="Optional — e.g. Main shop"
+        />
+        <div className="grid gap-stellar-3 sm:grid-cols-2">
+          <Input
+            label="Latitude"
+            type="number"
+            step="any"
+            value={form.latitude}
+            onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
+          />
+          <Input
+            label="Longitude"
+            type="number"
+            step="any"
+            value={form.longitude}
+            onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
+          />
+        </div>
+        <Button type="button" variant="secondary" onClick={useCurrentLocation} disabled={locating}>
+          {locating ? 'Reading location…' : 'Use my current location'}
+        </Button>
+        <div>
+          <p className="form-label">Perimeter radius</p>
+          <div className="mt-stellar-2 flex flex-wrap gap-stellar-2">
+            {RADIUS_PRESETS.map((preset) => (
+              <button
+                key={preset.value}
+                type="button"
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  Number(form.radiusMeters) === preset.value
+                    ? 'border-stellar-accent bg-stellar-accent/10 text-stellar-text'
+                    : 'border-stellar-border text-stellar-text-muted'
+                }`}
+                onClick={() => setForm((f) => ({ ...f, radiusMeters: preset.value }))}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <Input
+            className="mt-stellar-3"
+            label="Custom radius (metres)"
+            type="number"
+            min="10"
+            max="50000"
+            step="1"
+            value={form.radiusMeters}
+            onChange={(e) => setForm((f) => ({ ...f, radiusMeters: e.target.value }))}
+            hint="Anything from 10 m up to 50 km"
+          />
+        </div>
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save attendance location'}
+        </Button>
+      </form>
+    </SettingsSection>
+  );
+}
+
 function OrganizationRiskSettingsForm({ organization, onSaved }) {
   const [limit, setLimit] = useState(
     organization?.risk?.prebookCancellationLimit ?? 2,
@@ -477,6 +657,13 @@ function SettingsPage() {
 
       {role === ROLES.SUPER_ADMIN && (
         <OrganizationGstSettingsForm
+          organization={data?.organization}
+          onSaved={(organization) => setData((p) => ({ ...p, organization }))}
+        />
+      )}
+
+      {role === ROLES.SUPER_ADMIN && (
+        <OrganizationAttendanceGeoForm
           organization={data?.organization}
           onSaved={(organization) => setData((p) => ({ ...p, organization }))}
         />

@@ -57,6 +57,13 @@ export const uploadCategoryImage = (file, meta = {}) =>
     uploadRequestConfig,
   );
 
+export const uploadAttendancePhoto = (file, meta = {}) =>
+  api.post(
+    UPLOAD_ENDPOINTS.attendance,
+    buildUploadFormData(file, { fieldName: 'image', meta }),
+    uploadRequestConfig,
+  );
+
 /**
  * Delete Cloudinary assets by publicId or URL.
  */
